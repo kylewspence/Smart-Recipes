@@ -12,7 +12,10 @@
     "postinstall": "npm-run-all --parallel install:*",
     "tsc:client": "tsc --project client",
     "tsc:server": "tsc --project server",
-    "tsc": "npm-run-all --continue-on-error tsc:*"
+    "tsc": "npm-run-all --continue-on-error tsc:*",
+    "build:client": "npm run build --prefix client",
+    "build:server": "npm run build --prefix server",
+    "build": "npm-run-all build:*"
   },
   "keywords": [],
   "author": "",
