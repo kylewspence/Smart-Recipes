@@ -3,14 +3,6 @@ import express from 'express';
 import pg from 'pg';
 import { ClientError, errorMiddleware } from './lib/index';
 
-type Todo = {
-  entryId: number;
-  task: string;
-  isCompleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
 const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
