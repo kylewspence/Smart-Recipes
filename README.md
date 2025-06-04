@@ -1,5 +1,5 @@
-# 🧠 Smart Recipes - 
-AI-Powered Meal Planner - 
+# 🧠 Smart Recipes - AI-Powered Meal Planner
+Designed for the pickiest eaters who just need a little help deciding what to cook.
 Still very much under construction.
 
 Smart Recipes is a full-stack, AI-powered meal planning app that helps users generate personalized recipes based on their preferences, dietary restrictions, and ingredient availability.
