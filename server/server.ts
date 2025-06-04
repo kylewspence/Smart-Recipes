@@ -2,13 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import pg from 'pg';
 import { ClientError, errorMiddleware } from './lib/index';
+import userRoutes from './routes/users';
+import db from './db/db';
 
-const db = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false,
-  } : false, // No SSL for local development
-});
 
 const app = express();
 app.use(express.json());
@@ -58,6 +54,8 @@ app.get('/api/tables-test', async (req, res) => {
 app.get('/api/test', async (req, res) => {
   res.send('Hello, world!');
 });
+
+app.use('/api/users', userRoutes);
 
 
 app.use(errorMiddleware);
