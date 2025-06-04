@@ -1,4 +1,4 @@
-import express, { query } from 'express';
+import express from 'express';
 import { createUserSchema, updateUserSchema, userIdSchema } from '../schemas/userSchemas';
 import { validate, validateParamsAndBody } from '../middleware/validate';
 import db from '../db/db';
