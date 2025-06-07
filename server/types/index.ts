@@ -1,5 +1,7 @@
 // server/types/index.ts
 
+import { Request } from 'express';
+
 export interface User {
     userId: number;
     email: string;
@@ -8,13 +10,13 @@ export interface User {
     updatedAt: string;
 }
 
-export type IngredientPreference = 'like' | 'dislike' | 'stretch';
+export type PreferenceType = 'like' | 'dislike' | 'stretch';
 
 export interface UserIngredientPreference {
     id: number;
     userId: number;
     ingredientId: number;
-    preference: IngredientPreference;
+    preference: PreferenceType;
 }
 
 export interface UserPreferences {
@@ -37,7 +39,13 @@ export interface Ingredient {
     createdAt: string;
 }
 
-export interface Recipe {
+export interface RecipeIngredient {
+    name: string;
+    quantity: string;
+    notes?: string;
+}
+
+export interface DbRecipe {
     recipeId: number;
     userId: number;
     title: string;
@@ -55,7 +63,7 @@ export interface Recipe {
     createdAt: string;
 }
 
-export interface RecipeIngredient {
+export interface DbRecipeIngredient {
     recipeId: number;
     ingredientId: number;
     quantity: string;
@@ -80,4 +88,61 @@ export interface SavedRecipe {
     userId: number;
     recipeId: number;
     savedAt: string;
+}
+
+// Define user from JWT token
+export interface JwtUser {
+    userId: number;
+    email: string;
+    name: string;
+    iat?: number;
+}
+
+// Extend Express Request to include user
+declare global {
+    namespace Express {
+        interface Request {
+            user?: JwtUser;
+        }
+    }
+}
+
+// Recipe model for API/OpenAI
+export interface Recipe {
+    title: string;
+    description?: string;
+    ingredients: RecipeIngredient[];
+    instructions: string;
+    cookingTime?: number;
+    prepTime?: number;
+    servings?: number;
+    cuisine?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+    spiceLevel?: 'mild' | 'medium' | 'hot';
+    tips?: string[];
+    source: 'user' | 'ai';
+}
+
+// User preferences for recipe generation
+export interface UserPreference {
+    dietaryRestrictions?: string[];
+    allergies?: string[];
+    cuisinePreferences?: string[];
+    spiceLevel?: 'mild' | 'medium' | 'hot';
+    maxCookingTime?: number;
+    servingSize?: number;
+}
+
+export interface IngredientPreference {
+    ingredientId: number;
+    name: string;
+    preference: PreferenceType;
+}
+
+// OpenAI recipe generation request
+export interface RecipeGenerationRequest {
+    userPreferences: UserPreference;
+    ingredientPreferences: IngredientPreference[];
+    ingredients?: string[];
+    customMessage?: string;
 }

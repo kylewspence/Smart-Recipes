@@ -3,8 +3,9 @@ import express from 'express';
 import pg from 'pg';
 import { ClientError, errorMiddleware } from './lib/index';
 import userRoutes from './routes/users';
+import authRoutes from './routes/auth';
+import recipeRoutes from './routes/recipes';
 import db from './db/db';
-
 
 const app = express();
 app.use(express.json());
@@ -55,9 +56,12 @@ app.get('/api/test', async (req, res) => {
   res.send('Hello, world!');
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/recipes', recipeRoutes);
 
-
+// Error handling middleware
 app.use(errorMiddleware);
 
 app.listen(process.env.PORT, () => {
