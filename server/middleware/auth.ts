@@ -293,5 +293,5 @@ declare global {
     }
 }
 
-// Export types and utilities
-export { UserRole, Permission, rolePermissions }; 
+// Export utilities (types already exported above)
+export { rolePermissions }; 
