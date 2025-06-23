@@ -5,6 +5,10 @@ import { ClientError, errorMiddleware } from './lib/index';
 import userRoutes from './routes/users';
 import authRoutes from './routes/auth';
 import recipeRoutes from './routes/recipes';
+import preferencesRoutes from './routes/preferences';
+import ingredientsRoutes from './routes/ingredients';
+import searchRoutes from './routes/search';
+import migrationsRoutes from './routes/migrations';
 import db from './db/db';
 
 const app = express();
@@ -59,7 +63,11 @@ app.get('/api/test', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users', preferencesRoutes);
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/ingredients', ingredientsRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/migrations', migrationsRoutes);
 
 // Error handling middleware
 app.use(errorMiddleware);

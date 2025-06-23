@@ -1,0 +1,37 @@
+# Task ID: 9
+# Title: Advanced Search & Filtering System
+# Status: pending
+# Dependencies: 8
+# Priority: medium
+# Description: Implement comprehensive search and filtering for recipes with AI-powered recommendations
+# Details:
+Build advanced search and filtering capabilities for recipes including full-text search, ingredient-based search, complex filters, and AI-powered recipe recommendations.
+
+# Test Strategy:
+Test search performance and accuracy with large recipe databases and verify recommendation quality
+
+# Subtasks:
+## 9.1. Implement Full-text Recipe Search [pending]
+### Dependencies: None
+### Description: Add comprehensive search across all recipe content
+### Details:
+Implement full-text search across recipe titles, descriptions, ingredients, and instructions with relevance ranking, search suggestions, and typo tolerance.
+
+## 9.2. Build Advanced Filter System [pending]
+### Dependencies: None
+### Description: Create sophisticated filtering options for recipes
+### Details:
+Build filtering by cuisine, cooking time, difficulty, dietary restrictions, ingredients, ratings, and custom tags with combined filters and saved filter presets.
+
+## 9.3. Add AI-Powered Recipe Recommendations [pending]
+### Dependencies: None
+### Description: Implement intelligent recipe recommendations based on user behavior
+### Details:
+Build recommendation engine based on user preferences, cooking history, similar user patterns, seasonal ingredients, and trending recipes.
+
+## 9.4. Implement Smart Recipe Discovery [pending]
+### Dependencies: None
+### Description: Add intelligent recipe discovery features
+### Details:
+Build features like 'surprise me' recipe generation, ingredient-based discovery, cuisine exploration, and personalized recipe feeds.
+

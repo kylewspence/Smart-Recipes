@@ -25,7 +25,8 @@ CREATE TABLE "userIngredientPreferences" (
   "id"           SERIAL PRIMARY KEY,
   "userId"       INTEGER NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
   "ingredientId" INTEGER NOT NULL REFERENCES "ingredients"("ingredientId") ON DELETE CASCADE,
-  "preference"   TEXT NOT NULL CHECK ("preference" IN ('like', 'dislike', 'stretch'))
+  "preference"   TEXT NOT NULL CHECK ("preference" IN ('like', 'dislike', 'stretch')),
+  UNIQUE ("userId", "ingredientId") -- Prevent duplicate user-ingredient combinations
 );
 
 -- Broader user dietary preferences
@@ -62,6 +63,38 @@ CREATE TABLE "recipes" (
   "createdAt"      TIMESTAMPTZ(6) NOT NULL DEFAULT NOW()
 );
 
+-- Recipe ratings and reviews
+CREATE TABLE "recipeRatings" (
+  "id"         SERIAL PRIMARY KEY,
+  "recipeId"   INTEGER NOT NULL REFERENCES "recipes"("recipeId") ON DELETE CASCADE,
+  "userId"     INTEGER NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
+  "rating"     INTEGER NOT NULL CHECK ("rating" >= 1 AND "rating" <= 5),
+  "review"     TEXT,
+  "createdAt"  TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  "updatedAt"  TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  UNIQUE ("recipeId", "userId") -- One rating per user per recipe
+);
+
+-- Recipe collections (user-created groups of recipes)
+CREATE TABLE "recipeCollections" (
+  "collectionId" SERIAL PRIMARY KEY,
+  "userId"       INTEGER NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
+  "name"         TEXT NOT NULL,
+  "description"  TEXT,
+  "isPublic"     BOOLEAN DEFAULT FALSE,
+  "createdAt"    TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  "updatedAt"    TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  UNIQUE ("userId", "name") -- Unique collection names per user
+);
+
+-- Many-to-many: recipes in collections
+CREATE TABLE "collectionRecipes" (
+  "collectionId" INTEGER NOT NULL REFERENCES "recipeCollections"("collectionId") ON DELETE CASCADE,
+  "recipeId"     INTEGER NOT NULL REFERENCES "recipes"("recipeId") ON DELETE CASCADE,
+  "addedAt"      TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  PRIMARY KEY ("collectionId", "recipeId")
+);
+
 -- Many-to-many relationship: ingredients in a recipe
 CREATE TABLE "recipeIngredients" (
   "recipeId"     INTEGER NOT NULL REFERENCES "recipes"("recipeId") ON DELETE CASCADE,
@@ -91,11 +124,22 @@ CREATE TABLE "savedRecipes" (
   "id"        SERIAL PRIMARY KEY,
   "userId"    INTEGER NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
   "recipeId"  INTEGER NOT NULL REFERENCES "recipes"("recipeId") ON DELETE CASCADE,
-  "savedAt"   TIMESTAMPTZ(6) NOT NULL DEFAULT NOW()
+  "savedAt"   TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+  UNIQUE ("userId", "recipeId") -- Prevent duplicate saves
 );
 
 -- Indexes for performance
 CREATE INDEX ON "recipes" ("userId");
+CREATE INDEX ON "recipes" ("cuisine");
+CREATE INDEX ON "recipes" ("difficulty");
+CREATE INDEX ON "recipes" ("cookingTime");
+CREATE INDEX ON "recipes" ("isFavorite");
+CREATE INDEX ON "recipeRatings" ("recipeId");
+CREATE INDEX ON "recipeRatings" ("userId");
 CREATE INDEX ON "recipeTags" ("tag");
+CREATE INDEX ON "recipeTags" ("recipeId");
 CREATE INDEX ON "userIngredientPreferences" ("userId", "preference");
 CREATE INDEX ON "fridgeItems" ("userId");
+CREATE INDEX ON "savedRecipes" ("userId");
+CREATE INDEX ON "collectionRecipes" ("collectionId");
+CREATE INDEX ON "recipeCollections" ("userId", "isPublic");

@@ -8,7 +8,13 @@
     "dev": "tsx watch server.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "migrate": "tsx db/migrate.ts migrate",
+    "migrate:status": "tsx db/migrate.ts status",
+    "migrate:rollback": "tsx db/migrate.ts rollback",
+    "migrate:create": "tsx db/migrate.ts create",
+    "migrate:validate": "tsx db/migrate.ts validate",
+    "migrate:reset": "tsx db/migrate.ts reset"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
