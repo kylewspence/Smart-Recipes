@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import RecipeCustomizer from './RecipeCustomizer';
 import RecipeNotes from './RecipeNotes';
 import CookingHistory from './CookingHistory';
+import RecipeSharing from './RecipeSharing';
+import RecipeExport from './RecipeExport';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -539,6 +541,44 @@ export default function RecipeDisplay({
                 {/* Action Buttons */}
                 {showActions && (
                     <div className="p-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                        {/* Sharing and Export Section */}
+                        <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                Share & Export
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                <RecipeSharing
+                                    recipe={{
+                                        recipeId: recipe.id,
+                                        title: recipe.title,
+                                        description: recipe.description,
+                                        cuisine: recipe.cuisine,
+                                        difficulty: recipe.difficulty,
+                                        cookingTime: recipe.cookingTime,
+                                        prepTime: recipe.prepTime,
+                                        servings: recipe.servings
+                                    }}
+                                />
+                                <RecipeExport
+                                    recipe={{
+                                        recipeId: recipe.id,
+                                        title: recipe.title,
+                                        description: recipe.description,
+                                        cuisine: recipe.cuisine,
+                                        difficulty: recipe.difficulty,
+                                        cookingTime: recipe.cookingTime,
+                                        prepTime: recipe.prepTime,
+                                        servings: recipe.servings,
+                                        ingredients: recipe.ingredients?.map(ing =>
+                                            typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.name || ing}`.trim()
+                                        ),
+                                        instructions: recipe.instructions,
+                                        tags: recipe.tags
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <Button
                                 variant="outline"

@@ -146,3 +146,71 @@ export interface RecipeGenerationRequest {
     ingredients?: string[];
     customMessage?: string;
 }
+
+// Recipe Sharing Types
+export interface RecipeShare {
+    shareId: number;
+    recipeId: number;
+    ownerId: number;
+    sharedWithId?: number;
+    shareType: 'public' | 'friends' | 'specific';
+    permission: 'view' | 'comment' | 'edit';
+    shareUrl?: string;
+    expiresAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateRecipeShareRequest {
+    recipeId: number;
+    shareType: 'public' | 'friends' | 'specific';
+    permission?: 'view' | 'comment' | 'edit';
+    sharedWithId?: number;
+    expiresAt?: string;
+}
+
+// Recipe Export Types
+export interface RecipeExport {
+    exportId: number;
+    recipeId: number;
+    exportedBy: number;
+    exportType: 'pdf' | 'print' | 'json' | 'text';
+    exportFormat?: string;
+    exportedAt: string;
+}
+
+export interface CreateRecipeExportRequest {
+    recipeId: number;
+    exportType: 'pdf' | 'print' | 'json' | 'text';
+    exportFormat?: string;
+}
+
+// Social Media Sharing Types
+export interface SocialShareData {
+    platform: 'twitter' | 'facebook' | 'pinterest' | 'instagram';
+    title: string;
+    description: string;
+    imageUrl?: string;
+    url: string;
+}
+
+// Recipe Import Types
+export interface RecipeImportRequest {
+    shareUrl: string;
+    userId: number;
+}
+
+export interface SharedRecipeData {
+    recipe: DbRecipe;
+    ingredients: RecipeIngredient[];
+    tags: string[];
+    owner: {
+        name: string;
+        userId: number;
+    };
+    shareInfo: {
+        shareType: string;
+        permission: string;
+        createdAt: string;
+    };
+}

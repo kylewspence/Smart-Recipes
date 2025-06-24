@@ -19,6 +19,8 @@ export const createRecipeSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
     spiceLevel: z.enum(['mild', 'medium', 'hot']).optional(),
     ingredients: z.array(recipeIngredientSchema),
+    tags: z.array(z.string()).optional(),
+    isFavorite: z.boolean().optional(),
     isGenerated: z.boolean().default(true),
     generatedPrompt: z.string().optional()
 });
