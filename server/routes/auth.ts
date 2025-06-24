@@ -9,6 +9,27 @@ import { authenticate } from '../middleware/auth';
 const router = express.Router();
 
 /**
+ * Test endpoint to verify database connectivity
+ * GET /api/auth/test
+ */
+router.get('/test', async (req, res, next) => {
+    try {
+        const result = await db.query('SELECT COUNT(*) as user_count FROM "users"');
+        res.json({
+            success: true,
+            message: 'Database connection successful',
+            userCount: result.rows[0].user_count
+        });
+    } catch (error: any) {
+        console.error('Database test error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Database connection failed'
+        });
+    }
+});
+
+/**
  * User registration
  * POST /api/auth/register
  */
@@ -17,10 +38,13 @@ router.post('/register', async (req, res, next) => {
         // Validate request body
         const validatedData = registerSchema.parse(req.body);
 
+        // Remove confirmPassword from the data (we only needed it for validation)
+        const { confirmPassword, ...userData } = validatedData;
+
         // Check if email already exists
         const existingUser = await db.query(
             'SELECT * FROM "users" WHERE "email" = $1',
-            [validatedData.email]
+            [userData.email]
         );
 
         if (existingUser.rows.length > 0) {
@@ -28,12 +52,12 @@ router.post('/register', async (req, res, next) => {
         }
 
         // Hash password
-        const passwordHash = await hashPassword(validatedData.password);
+        const passwordHash = await hashPassword(userData.password);
 
         // Create user
         const result = await db.query(
             'INSERT INTO "users" ("email", "name", "passwordHash") VALUES ($1, $2, $3) RETURNING "userId", "email", "name"',
-            [validatedData.email, validatedData.name, passwordHash]
+            [userData.email, userData.name, passwordHash]
         );
 
         const user = result.rows[0];
@@ -42,7 +66,7 @@ router.post('/register', async (req, res, next) => {
         const token = generateToken(user);
         const refreshToken = await generateRefreshToken(user.userId);
 
-        // Return tokens and user data
+        // Return tokens and user data with expiresIn
         res.status(201).json({
             user: {
                 userId: user.userId,
@@ -50,9 +74,11 @@ router.post('/register', async (req, res, next) => {
                 name: user.name
             },
             token,
-            refreshToken
+            refreshToken,
+            expiresIn: 3600 // 1 hour in seconds
         });
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Registration error:', error);
         if (error instanceof z.ZodError) {
             next(new ClientError(400, error.errors[0].message));
         } else {
@@ -106,7 +132,8 @@ router.post('/login', async (req, res, next) => {
                 name: user.name
             },
             token,
-            refreshToken
+            refreshToken,
+            expiresIn: 3600 // 1 hour in seconds
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
