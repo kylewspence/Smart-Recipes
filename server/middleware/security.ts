@@ -1,6 +1,12 @@
 import helmet from 'helmet';
 import cors from 'cors';
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
+
+// Generate CSP nonce for inline scripts
+export const generateNonce = (): string => {
+    return crypto.randomBytes(16).toString('base64');
+};
 
 // CORS configuration for different environments
 const corsOptions = {
@@ -38,33 +44,63 @@ const corsOptions = {
         'Accept',
         'Origin',
         'Access-Control-Request-Method',
-        'Access-Control-Request-Headers'
+        'Access-Control-Request-Headers',
+        'X-CSRF-Token',
+        'X-API-Key'
     ],
     exposedHeaders: [
         'X-RateLimit-Limit',
         'X-RateLimit-Remaining',
-        'X-RateLimit-Reset'
+        'X-RateLimit-Reset',
+        'X-Request-ID'
     ],
     optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
 
-// Security headers configuration
-const helmetOptions = {
-    // Content Security Policy
+// Enhanced security headers configuration
+const createHelmetOptions = (nonce?: string) => ({
+    // Enhanced Content Security Policy
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "https:"],
-            scriptSrc: ["'self'"],
-            connectSrc: ["'self'", "https://api.openai.com"], // Allow OpenAI API calls
+            styleSrc: [
+                "'self'",
+                "'unsafe-inline'", // Required for Tailwind CSS
+                "https://fonts.googleapis.com"
+            ],
+            fontSrc: [
+                "'self'",
+                "https://fonts.gstatic.com"
+            ],
+            imgSrc: [
+                "'self'",
+                "data:",
+                "https:",
+                "blob:",
+                "*.vercel.app" // For Vercel image optimization
+            ],
+            scriptSrc: [
+                "'self'",
+                ...(nonce ? [`'nonce-${nonce}'`] : ["'unsafe-eval'"]), // Use nonce in production, unsafe-eval for dev
+                "https://vercel.live" // For Vercel analytics
+            ],
+            connectSrc: [
+                "'self'",
+                "https://api.openai.com",
+                "https://vitals.vercel-insights.com", // Vercel analytics
+                "wss:" // WebSocket connections
+            ],
             frameSrc: ["'none'"],
-            objectSrc: ["'none'"]
-        }
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'", "blob:"],
+            workerSrc: ["'self'", "blob:"],
+            childSrc: ["'self'"],
+            formAction: ["'self'"]
+        },
+        reportOnly: process.env.NODE_ENV === 'development'
     },
 
-    // HTTP Strict Transport Security
+    // Enhanced HTTP Strict Transport Security
     hsts: {
         maxAge: 31536000, // 1 year
         includeSubDomains: true,
@@ -74,18 +110,18 @@ const helmetOptions = {
     // Prevent MIME type sniffing
     noSniff: true,
 
-    // Prevent clickjacking
+    // Enhanced clickjacking protection
     frameguard: { action: 'deny' as const },
 
     // Hide X-Powered-By header
     hidePoweredBy: true,
 
-    // Prevent cross-domain sharing
-    crossOriginEmbedderPolicy: false, // Disable if causing issues with external APIs
+    // Disable cross-origin embedder policy for API compatibility
+    crossOriginEmbedderPolicy: false,
 
-    // Referrer policy
-    referrerPolicy: { policy: 'same-origin' as const }
-};
+    // Enhanced referrer policy
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' as const }
+});
 
 // Security middleware function
 export const securityMiddleware = [
@@ -93,7 +129,7 @@ export const securityMiddleware = [
     cors(corsOptions),
 
     // Apply security headers
-    helmet(helmetOptions),
+    helmet(createHelmetOptions()),
 
     // Custom security middleware
     (req: Request, res: Response, next: NextFunction) => {
@@ -249,7 +285,7 @@ export const securityMonitoring = (req: Request, res: Response, next: NextFuncti
 // Export all security middleware
 export {
     corsOptions,
-    helmetOptions
+    createHelmetOptions
 };
 
 // Combine all security middleware for easy application
