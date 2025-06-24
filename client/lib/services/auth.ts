@@ -101,10 +101,10 @@ export const isTokenExpired = (): boolean => {
 // Helper function to create API errors
 const createApiError = (error: AxiosError): ApiError => {
     const response = error.response;
-    const responseData = response?.data as any;
-    const message = responseData?.message || error.message || 'An unexpected error occurred';
+    const responseData = response?.data as Record<string, unknown>;
+    const message = (responseData?.message as string) || error.message || 'An unexpected error occurred';
     const status = response?.status || 500;
-    const details = responseData?.details || {};
+    const details = (responseData?.details as Record<string, unknown>) || {};
 
     return {
         message,

@@ -59,7 +59,7 @@ export interface AuthContextType extends AuthState {
 export interface ApiError {
     message: string;
     status: number;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
 }
 
 export interface AuthResponse {

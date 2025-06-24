@@ -58,11 +58,11 @@ export default function RegisterPage() {
             if (response.status === 201) {
                 router.push("/login?registered=true");
             }
-        } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                "An error occurred during registration. Please try again."
-            );
+        } catch (err: unknown) {
+            const errorMessage = axios.isAxiosError(err) && err.response?.data?.message
+                ? err.response.data.message
+                : "An error occurred during registration. Please try again.";
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }

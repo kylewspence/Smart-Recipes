@@ -56,14 +56,15 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
             if (redirectTo) {
                 window.location.href = redirectTo;
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Handle specific error cases
-            if (err.status === 401) {
+            const errorObj = err as { status?: number; message?: string };
+            if (errorObj.status === 401) {
                 setError('root', {
                     type: 'manual',
                     message: 'Invalid email or password. Please try again.',
                 });
-            } else if (err.status === 429) {
+            } else if (errorObj.status === 429) {
                 setError('root', {
                     type: 'manual',
                     message: 'Too many login attempts. Please try again later.',
@@ -71,7 +72,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
             } else {
                 setError('root', {
                     type: 'manual',
-                    message: err.message || 'Login failed. Please try again.',
+                    message: errorObj.message || 'Login failed. Please try again.',
                 });
             }
         }
@@ -244,7 +245,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                 {/* Footer */}
                 <div className="mt-8 text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                         <Link
                             href="/auth/register"
                             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
