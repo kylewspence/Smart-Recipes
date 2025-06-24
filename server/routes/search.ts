@@ -767,14 +767,15 @@ async function searchIngredientsEnhanced(params: any) {
     }
 
     const query = `
-        SELECT i."ingredientId", i."name", i."category",
+        SELECT i."ingredientId", i."name", ic."name" as category,
                'ingredient' as result_type,
                COUNT(DISTINCT ri."recipeId") as usage_count,
                ${relevanceScore}
         FROM "ingredients" i
+        LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
         LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
         WHERE ${whereConditions.join(' AND ')}
-        GROUP BY i."ingredientId", i."name", i."category"
+        GROUP BY i."ingredientId", i."name", ic."name"
         ORDER BY relevance_score DESC, usage_count DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
