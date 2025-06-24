@@ -4,6 +4,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { MobileLayoutWrapper } from '@/components/layout/MobileLayoutWrapper';
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -92,6 +94,8 @@ export default function RootLayout({
             <MobileLayoutWrapper>
               {children}
             </MobileLayoutWrapper>
+            <PWAInstallPrompt />
+            <OfflineIndicator />
           </AuthProvider>
         </ThemeProvider>
       </body>

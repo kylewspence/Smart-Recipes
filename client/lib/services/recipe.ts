@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { RecipeGenerationRequest, RecipeGenerationResponse, Recipe, RecipeIngredient } from '../types/recipe';
+import { offlineService } from './offline';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -111,239 +112,276 @@ export interface CookingStats {
     }>;
 }
 
-export const recipeService = {
-    // Generate a new recipe
-    async generateRecipe(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
-        const response = await recipeApi.post<RecipeGenerationResponse>('/recipes/generate', request);
-        return response.data;
-    },
+export interface RecipeGenerationParams {
+    ingredients?: string[];
+    excludeIngredients?: string[];
+    cuisine?: string;
+    dietaryRestrictions?: string[];
+    allergies?: string[];
+    difficulty?: 'easy' | 'medium' | 'hard';
+    cookingTime?: number;
+    servings?: number;
+    preferences?: string[];
+    mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
+    equipment?: string[];
+}
 
-    // Get all user's recipes
-    async getUserRecipes(userId: number): Promise<Recipe[]> {
-        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/users/${userId}/recipes`);
-        return response.data.data;
-    },
+export interface RecipeResponse {
+    recipe: Recipe;
+    generatedPrompt: string;
+}
 
-    // Get a specific recipe
-    async getRecipe(recipeId: number): Promise<Recipe> {
-        const response = await recipeApi.get<{ success: boolean; data: Recipe }>(`/recipes/${recipeId}`);
-        return response.data.data;
-    },
-
-    // Save/favorite a recipe
-    async saveRecipe(recipeId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.post(`/recipes/${recipeId}/save`, {
-            userId: user?.userId
-        });
-    },
-
-    // Unsave a recipe
-    async unsaveRecipe(recipeId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.delete(`/recipes/${recipeId}/save`, {
-            data: { userId: user?.userId }
-        });
-    },
-
-    // Toggle favorite status
-    async toggleFavorite(recipeId: number): Promise<{ isFavorite: boolean }> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        const response = await recipeApi.post<{ success: boolean; data: { isFavorite: boolean } }>(`/recipes/${recipeId}/favorite`, {
-            userId: user?.userId
-        });
-        return response.data.data;
-    },
-
-    // Get user's saved recipes
-    async getSavedRecipes(userId: number): Promise<SavedRecipe[]> {
-        const response = await recipeApi.get<{ success: boolean; data: SavedRecipe[] }>(`/users/${userId}/saved`);
-        return response.data.data;
-    },
-
-    // Get user's favorite recipes
-    async getFavoriteRecipes(userId: number): Promise<Recipe[]> {
-        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/users/${userId}/favorites`);
-        return response.data.data;
-    },
-
-    // Rate a recipe
-    async rateRecipe(recipeId: number, rating: number, review?: string): Promise<void> {
-        await recipeApi.post(`/recipes/${recipeId}/rate`, { rating, review });
-    },
-
-    // Collections Management
-    async getCollections(userId: number): Promise<RecipeCollection[]> {
-        const response = await recipeApi.get<{ success: boolean; data: RecipeCollection[] }>(`/users/${userId}/collections`);
-        return response.data.data;
-    },
-
-    async createCollection(data: CreateCollectionRequest): Promise<RecipeCollection> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        const response = await recipeApi.post<{ success: boolean; data: RecipeCollection }>('/collections', {
-            ...data,
-            userId: user?.userId
-        });
-        return response.data.data;
-    },
-
-    async updateCollection(collectionId: number, data: Partial<CreateCollectionRequest>): Promise<RecipeCollection> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        const response = await recipeApi.put<{ success: boolean; data: RecipeCollection }>(`/collections/${collectionId}`, {
-            ...data,
-            userId: user?.userId
-        });
-        return response.data.data;
-    },
-
-    async deleteCollection(collectionId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.delete(`/collections/${collectionId}`, {
-            data: { userId: user?.userId }
-        });
-    },
-
-    async getCollectionRecipes(collectionId: number): Promise<Recipe[]> {
-        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/collections/${collectionId}/recipes`);
-        return response.data.data;
-    },
-
-    async addRecipeToCollection(collectionId: number, recipeId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.post(`/collections/${collectionId}/recipes`, {
-            recipeId,
-            userId: user?.userId
-        });
-    },
-
-    async removeRecipeFromCollection(collectionId: number, recipeId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.delete(`/collections/${collectionId}/recipes/${recipeId}`, {
-            data: { userId: user?.userId }
-        });
-    },
-
-    // Bulk operations
-    async bulkRecipeAction(
-        recipeIds: number[],
-        action: 'favorite' | 'unfavorite' | 'save' | 'unsave' | 'delete'
-    ): Promise<void> {
-        await recipeApi.post('/recipes/bulk', {
-            recipeIds,
-            action
-        });
-    },
-
-    // Recipe customization features
-    async generateSubstitutions(recipeId: number, ingredientId: number): Promise<IngredientSubstitution[]> {
-        try {
-            const response = await recipeApi.post<{ success: boolean; data: SubstitutionResponse }>(`/recipes/${recipeId}/substitutions`, {
-                ingredientId
-            });
-            return response.data.data.substitutions;
-        } catch (error) {
-            console.error('Failed to generate substitutions:', error);
-            // Fallback to mock data if API fails
-            return [
-                {
-                    name: 'Alternative ingredient',
-                    reason: 'More accessible option',
-                    ratio: 1.0,
-                    difficulty: 'easy'
-                }
-            ];
-        }
-    },
-
-    async generateVariation(recipeId: number, variationType: string, description: string): Promise<VariationResponse> {
-        try {
-            const response = await recipeApi.post<{ success: boolean; data: VariationResponse }>(`/recipes/${recipeId}/variation`, {
-                variationType,
-                description
-            });
-            return response.data.data;
-        } catch (error) {
-            console.error('Failed to generate variation:', error);
-            throw error;
-        }
-    },
-
-    async scaleRecipe(recipeId: number, newServings: number): Promise<ScalingResponse> {
-        try {
-            const response = await recipeApi.post<{ success: boolean; data: ScalingResponse }>(`/recipes/${recipeId}/scale`, {
-                newServings
-            });
-            return response.data.data;
-        } catch (error) {
-            console.error('Failed to scale recipe:', error);
-            throw error;
-        }
-    },
-
-    // Recipe Notes
-    async getRecipeNotes(recipeId: number, userId: number): Promise<RecipeNote[]> {
-        const response = await recipeApi.get<{ success: boolean; data: RecipeNote[] }>(`/recipes/${recipeId}/notes/${userId}`);
-        return response.data.data;
-    },
-
-    async addRecipeNote(recipeId: number, note: string, noteType: NoteType = 'personal', isPrivate: boolean = true): Promise<RecipeNote> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        const response = await recipeApi.post<{ success: boolean; data: RecipeNote }>(`/recipes/${recipeId}/notes`, {
-            userId: user?.userId,
-            note,
-            noteType,
-            isPrivate
-        });
-        return response.data.data;
-    },
-
-    async deleteRecipeNote(recipeId: number, noteId: number): Promise<void> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        await recipeApi.delete(`/recipes/${recipeId}/notes/${noteId}`, {
-            data: { userId: user?.userId }
-        });
-    },
-
-    // Cooking History
-    async getCookingHistory(userId: number, recipeId?: number): Promise<CookingSession[]> {
-        const params = recipeId ? `?recipeId=${recipeId}` : '';
-        const response = await recipeApi.get<{ success: boolean; data: CookingSession[] }>(`/users/${userId}/cooking-history${params}`);
-        return response.data.data;
-    },
-
-    async recordCookingSession(recipeId: number, sessionData: CookingSessionData): Promise<CookingSession> {
-        const userData = localStorage.getItem('user_data');
-        const user = userData ? JSON.parse(userData) : null;
-
-        const response = await recipeApi.post<{ success: boolean; data: CookingSession }>(`/recipes/${recipeId}/cook`, {
-            userId: user?.userId,
-            ...sessionData
-        });
-        return response.data.data;
-    },
-
-    async getCookingStats(userId: number): Promise<CookingStats> {
-        const response = await recipeApi.get<{ success: boolean; data: CookingStats }>(`/users/${userId}/cooking-stats`);
-        return response.data.data;
+class RecipeService {
+    private getAuthHeaders() {
+        const token = localStorage.getItem('token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+        };
     }
-};
+
+    private async handleResponse<T>(response: Response): Promise<T> {
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`HTTP ${response.status}: ${error}`);
+        }
+        return response.json();
+    }
+
+    async generateRecipe(params: RecipeGenerationParams): Promise<RecipeResponse> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Recipe generation requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/generate`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify(params),
+            });
+
+            const result = await this.handleResponse<RecipeResponse>(response);
+
+            // Cache the generated recipe for offline access
+            if (result.recipe) {
+                await offlineService.cacheRecipe(result.recipe);
+            }
+
+            return result;
+        } catch (error) {
+            // Add to pending sync if offline
+            if (!networkStatus.isOnline) {
+                await offlineService.addPendingSync('generate_recipe', params);
+                throw new Error('Recipe generation queued for when you\'re back online');
+            }
+            throw error;
+        }
+    }
+
+    async getRecipe(id: string): Promise<Recipe> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        // Try to get from cache first
+        const cachedRecipe = await offlineService.getCachedRecipe(id);
+        if (cachedRecipe) {
+            // If offline, return cached version
+            if (!networkStatus.isOnline) {
+                return cachedRecipe;
+            }
+
+            // If online, try to fetch fresh data but fallback to cache
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
+                    headers: this.getAuthHeaders(),
+                });
+
+                const recipe = await this.handleResponse<Recipe>(response);
+                await offlineService.cacheRecipe(recipe);
+                return recipe;
+            } catch (error) {
+                console.warn('Failed to fetch fresh recipe, using cached version:', error);
+                return cachedRecipe;
+            }
+        }
+
+        // If not cached and offline, throw error
+        if (!networkStatus.isOnline) {
+            throw new Error('Recipe not available offline');
+        }
+
+        // Fetch from server
+        const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
+            headers: this.getAuthHeaders(),
+        });
+
+        const recipe = await this.handleResponse<Recipe>(response);
+        await offlineService.cacheRecipe(recipe);
+        return recipe;
+    }
+
+    async getUserRecipes(): Promise<Recipe[]> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            // Return cached recipes when offline
+            return offlineService.getCachedRecipes();
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/user`, {
+                headers: this.getAuthHeaders(),
+            });
+
+            const recipes = await this.handleResponse<Recipe[]>(response);
+
+            // Cache all recipes for offline access
+            for (const recipe of recipes) {
+                await offlineService.cacheRecipe(recipe);
+            }
+
+            return recipes;
+        } catch (error) {
+            console.warn('Failed to fetch user recipes, using cached versions:', error);
+            return offlineService.getCachedRecipes();
+        }
+    }
+
+    async favoriteRecipe(recipeId: string): Promise<void> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            // Handle offline
+            await offlineService.addOfflineFavorite(recipeId);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/favorite`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+            });
+
+            await this.handleResponse<void>(response);
+
+            // Also update offline favorites
+            await offlineService.addOfflineFavorite(recipeId);
+        } catch (error) {
+            // If request fails, add to offline favorites and pending sync
+            await offlineService.addOfflineFavorite(recipeId);
+            throw error;
+        }
+    }
+
+    async unfavoriteRecipe(recipeId: string): Promise<void> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            // Handle offline
+            await offlineService.removeOfflineFavorite(recipeId);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/favorite`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+            });
+
+            await this.handleResponse<void>(response);
+
+            // Also update offline favorites
+            await offlineService.removeOfflineFavorite(recipeId);
+        } catch (error) {
+            // If request fails, remove from offline favorites and add to pending sync
+            await offlineService.removeOfflineFavorite(recipeId);
+            throw error;
+        }
+    }
+
+    async getFavoriteRecipes(): Promise<Recipe[]> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            // Return cached recipes that are marked as favorites offline
+            const cachedRecipes = offlineService.getCachedRecipes();
+            return cachedRecipes.filter(recipe =>
+                offlineService.isOfflineFavorite(recipe.id.toString())
+            );
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/favorites`, {
+                headers: this.getAuthHeaders(),
+            });
+
+            const recipes = await this.handleResponse<Recipe[]>(response);
+
+            // Cache all favorite recipes
+            for (const recipe of recipes) {
+                await offlineService.cacheRecipe(recipe);
+                await offlineService.addOfflineFavorite(recipe.id.toString());
+            }
+
+            return recipes;
+        } catch (error) {
+            console.warn('Failed to fetch favorite recipes, using cached versions:', error);
+            const cachedRecipes = offlineService.getCachedRecipes();
+            return cachedRecipes.filter(recipe =>
+                offlineService.isOfflineFavorite(recipe.id.toString())
+            );
+        }
+    }
+
+    async rateRecipe(recipeId: string, rating: number): Promise<void> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Rating recipes requires an internet connection');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/rate`, {
+            method: 'POST',
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify({ rating }),
+        });
+
+        await this.handleResponse<void>(response);
+    }
+
+    async deleteRecipe(recipeId: string): Promise<void> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Deleting recipes requires an internet connection');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}`, {
+            method: 'DELETE',
+            headers: this.getAuthHeaders(),
+        });
+
+        await this.handleResponse<void>(response);
+    }
+
+    // Utility methods for offline functionality
+    isRecipeFavorited(recipeId: string): boolean {
+        return offlineService.isOfflineFavorite(recipeId);
+    }
+
+    getCachedRecipes(): Recipe[] {
+        return offlineService.getCachedRecipes();
+    }
+
+    async clearCache(): Promise<void> {
+        await offlineService.clearCache();
+    }
+
+    getStorageUsage() {
+        return offlineService.getStorageUsage();
+    }
+}
+
+export const recipeService = new RecipeService();
+export default recipeService;
