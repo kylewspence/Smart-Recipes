@@ -167,6 +167,34 @@ export const authService = {
         }
     },
 
+    // Guest login - create temporary guest session
+    async guestLogin(): Promise<AuthResponse> {
+        try {
+            const response = await authApi.post<AuthResponse>('/auth/guest');
+            const authData = response.data;
+
+            // Store tokens
+            const expiresAt = Date.now() + (authData.expiresIn || 3600) * 1000; // Default 1 hour
+            storeAuthTokens({
+                accessToken: authData.token,
+                refreshToken: authData.refreshToken,
+                expiresAt,
+            });
+
+            // Store user data with guest flag
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('user_data', JSON.stringify({
+                    ...authData.user,
+                    isGuest: true
+                }));
+            }
+
+            return authData;
+        } catch (error) {
+            throw createApiError(error as AxiosError);
+        }
+    },
+
     // Logout user
     async logout(): Promise<void> {
         try {

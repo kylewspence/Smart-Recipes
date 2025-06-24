@@ -1390,4 +1390,388 @@ router.post('/:recipeId/scale', async (req, res, next) => {
     }
 });
 
+// ===== RECIPE COLLECTIONS =====
+
+/**
+ * Get user's collections
+ * GET /api/users/:userId/collections
+ */
+router.get('/users/:userId/collections', async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.userId, 10);
+
+        if (isNaN(userId) || userId <= 0) {
+            throw new ClientError(400, 'Invalid user ID');
+        }
+
+        const collectionsResult = await db.query(
+            `SELECT rc.*, 
+                    COALESCE(
+                        (SELECT COUNT(*)::integer 
+                         FROM "collectionRecipes" cr 
+                         WHERE cr."collectionId" = rc."collectionId"
+                        ), 0) as "recipeCount"
+            FROM "recipeCollections" rc
+            WHERE rc."userId" = $1
+            ORDER BY rc."createdAt" DESC`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            data: collectionsResult.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Create a new collection
+ * POST /api/collections
+ */
+router.post('/collections', async (req, res, next) => {
+    try {
+        const collectionData = recipeCollectionSchema.parse(req.body);
+        const { userId } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if collection name already exists for this user
+        const existingCollection = await db.query(
+            'SELECT "collectionId" FROM "recipeCollections" WHERE "userId" = $1 AND "name" = $2',
+            [userId, collectionData.name]
+        );
+
+        if (existingCollection.rows.length > 0) {
+            throw new ClientError(409, 'Collection with this name already exists');
+        }
+
+        const result = await db.query(
+            `INSERT INTO "recipeCollections" ("userId", "name", "description", "isPublic")
+             VALUES ($1, $2, $3, $4)
+             RETURNING *, 0 as "recipeCount"`,
+            [userId, collectionData.name, collectionData.description || null, collectionData.isPublic]
+        );
+
+        res.status(201).json({
+            success: true,
+            data: result.rows[0],
+            message: 'Collection created successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Update a collection
+ * PUT /api/collections/:collectionId
+ */
+router.put('/collections/:collectionId', async (req, res, next) => {
+    try {
+        const collectionId = parseInt(req.params.collectionId, 10);
+
+        if (isNaN(collectionId) || collectionId <= 0) {
+            throw new ClientError(400, 'Invalid collection ID');
+        }
+
+        const updateData = recipeCollectionSchema.partial().parse(req.body);
+        const { userId } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if collection exists and belongs to user
+        const collectionCheck = await db.query(
+            'SELECT * FROM "recipeCollections" WHERE "collectionId" = $1 AND "userId" = $2',
+            [collectionId, userId]
+        );
+
+        if (collectionCheck.rows.length === 0) {
+            throw new ClientError(404, 'Collection not found or does not belong to user');
+        }
+
+        // If name is being updated, check for duplicates
+        if (updateData.name) {
+            const existingCollection = await db.query(
+                'SELECT "collectionId" FROM "recipeCollections" WHERE "userId" = $1 AND "name" = $2 AND "collectionId" != $3',
+                [userId, updateData.name, collectionId]
+            );
+
+            if (existingCollection.rows.length > 0) {
+                throw new ClientError(409, 'Collection with this name already exists');
+            }
+        }
+
+        // Build update query dynamically
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        if (updateData.name !== undefined) {
+            updateFields.push(`"name" = $${paramIndex}`);
+            updateValues.push(updateData.name);
+            paramIndex++;
+        }
+
+        if (updateData.description !== undefined) {
+            updateFields.push(`"description" = $${paramIndex}`);
+            updateValues.push(updateData.description);
+            paramIndex++;
+        }
+
+        if (updateData.isPublic !== undefined) {
+            updateFields.push(`"isPublic" = $${paramIndex}`);
+            updateValues.push(updateData.isPublic);
+            paramIndex++;
+        }
+
+        updateFields.push(`"updatedAt" = NOW()`);
+        updateValues.push(collectionId);
+
+        const result = await db.query(
+            `UPDATE "recipeCollections" 
+             SET ${updateFields.join(', ')}
+             WHERE "collectionId" = $${paramIndex}
+             RETURNING *, 
+                      (SELECT COUNT(*)::integer 
+                       FROM "collectionRecipes" cr 
+                       WHERE cr."collectionId" = $${paramIndex}) as "recipeCount"`,
+            updateValues
+        );
+
+        res.json({
+            success: true,
+            data: result.rows[0],
+            message: 'Collection updated successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Delete a collection
+ * DELETE /api/collections/:collectionId
+ */
+router.delete('/collections/:collectionId', async (req, res, next) => {
+    try {
+        const collectionId = parseInt(req.params.collectionId, 10);
+
+        if (isNaN(collectionId) || collectionId <= 0) {
+            throw new ClientError(400, 'Invalid collection ID');
+        }
+
+        const { userId } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if collection exists and belongs to user
+        const collectionCheck = await db.query(
+            'SELECT * FROM "recipeCollections" WHERE "collectionId" = $1 AND "userId" = $2',
+            [collectionId, userId]
+        );
+
+        if (collectionCheck.rows.length === 0) {
+            throw new ClientError(404, 'Collection not found or does not belong to user');
+        }
+
+        // Delete the collection (cascading will handle collectionRecipes)
+        await db.query(
+            'DELETE FROM "recipeCollections" WHERE "collectionId" = $1',
+            [collectionId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Collection deleted successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Get recipes in a collection
+ * GET /api/collections/:collectionId/recipes
+ */
+router.get('/collections/:collectionId/recipes', async (req, res, next) => {
+    try {
+        const collectionId = parseInt(req.params.collectionId, 10);
+
+        if (isNaN(collectionId) || collectionId <= 0) {
+            throw new ClientError(400, 'Invalid collection ID');
+        }
+
+        // Check if collection exists
+        const collectionCheck = await db.query(
+            'SELECT * FROM "recipeCollections" WHERE "collectionId" = $1',
+            [collectionId]
+        );
+
+        if (collectionCheck.rows.length === 0) {
+            throw new ClientError(404, 'Collection not found');
+        }
+
+        const recipesResult = await db.query(
+            `SELECT r.*, 
+                    COALESCE(
+                        (SELECT json_agg(
+                            json_build_object(
+                                'ingredientId', ri."ingredientId",
+                                'name', i."name",
+                                'quantity', ri."quantity"
+                            )
+                        )
+                        FROM "recipeIngredients" ri
+                        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                        WHERE ri."recipeId" = r."recipeId"
+                        ), '[]'::json) as ingredients,
+                    COALESCE(
+                        (SELECT json_agg(rt."tag")
+                        FROM "recipeTags" rt
+                        WHERE rt."recipeId" = r."recipeId"
+                        ), '[]'::json) as tags,
+                    cr."addedAt"
+            FROM "collectionRecipes" cr
+            JOIN "recipes" r ON cr."recipeId" = r."recipeId"
+            WHERE cr."collectionId" = $1
+            ORDER BY cr."addedAt" DESC`,
+            [collectionId]
+        );
+
+        res.json({
+            success: true,
+            data: recipesResult.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Add recipe to collection
+ * POST /api/collections/:collectionId/recipes
+ */
+router.post('/collections/:collectionId/recipes', async (req, res, next) => {
+    try {
+        const collectionId = parseInt(req.params.collectionId, 10);
+
+        if (isNaN(collectionId) || collectionId <= 0) {
+            throw new ClientError(400, 'Invalid collection ID');
+        }
+
+        const { recipeId, userId } = req.body;
+
+        if (!recipeId || isNaN(parseInt(recipeId, 10)) || parseInt(recipeId, 10) <= 0) {
+            throw new ClientError(400, 'Valid recipe ID is required');
+        }
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if collection exists and belongs to user
+        const collectionCheck = await db.query(
+            'SELECT * FROM "recipeCollections" WHERE "collectionId" = $1 AND "userId" = $2',
+            [collectionId, userId]
+        );
+
+        if (collectionCheck.rows.length === 0) {
+            throw new ClientError(404, 'Collection not found or does not belong to user');
+        }
+
+        // Check if recipe exists
+        const recipeCheck = await db.query(
+            'SELECT * FROM "recipes" WHERE "recipeId" = $1',
+            [recipeId]
+        );
+
+        if (recipeCheck.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found');
+        }
+
+        // Check if recipe is already in collection
+        const existingEntry = await db.query(
+            'SELECT * FROM "collectionRecipes" WHERE "collectionId" = $1 AND "recipeId" = $2',
+            [collectionId, recipeId]
+        );
+
+        if (existingEntry.rows.length > 0) {
+            res.json({
+                success: true,
+                message: 'Recipe already in collection'
+            });
+            return;
+        }
+
+        // Add recipe to collection
+        await db.query(
+            'INSERT INTO "collectionRecipes" ("collectionId", "recipeId") VALUES ($1, $2)',
+            [collectionId, recipeId]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Recipe added to collection successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Remove recipe from collection
+ * DELETE /api/collections/:collectionId/recipes/:recipeId
+ */
+router.delete('/collections/:collectionId/recipes/:recipeId', async (req, res, next) => {
+    try {
+        const collectionId = parseInt(req.params.collectionId, 10);
+        const recipeId = parseInt(req.params.recipeId, 10);
+
+        if (isNaN(collectionId) || collectionId <= 0) {
+            throw new ClientError(400, 'Invalid collection ID');
+        }
+
+        if (isNaN(recipeId) || recipeId <= 0) {
+            throw new ClientError(400, 'Invalid recipe ID');
+        }
+
+        const { userId } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if collection exists and belongs to user
+        const collectionCheck = await db.query(
+            'SELECT * FROM "recipeCollections" WHERE "collectionId" = $1 AND "userId" = $2',
+            [collectionId, userId]
+        );
+
+        if (collectionCheck.rows.length === 0) {
+            throw new ClientError(404, 'Collection not found or does not belong to user');
+        }
+
+        // Remove recipe from collection
+        await db.query(
+            'DELETE FROM "collectionRecipes" WHERE "collectionId" = $1 AND "recipeId" = $2',
+            [collectionId, recipeId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Recipe removed from collection successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;

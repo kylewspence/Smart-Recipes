@@ -1,21 +1,10 @@
 export interface User {
-    id: number;
+    userId: number;
     email: string;
-    firstName: string;
-    lastName: string;
-    role: 'User' | 'Moderator' | 'Admin';
-    isEmailVerified: boolean;
-    createdAt: string;
-    updatedAt: string;
-    profile?: {
-        bio?: string;
-        avatar?: string;
-        preferences?: {
-            theme: 'light' | 'dark' | 'system';
-            notifications: boolean;
-            privacy: 'public' | 'private';
-        };
-    };
+    name: string;
+    isGuest?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface LoginCredentials {
@@ -50,6 +39,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
     login: (credentials: LoginCredentials) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
+    guestLogin: () => Promise<void>;
     logout: () => Promise<void>;
     refreshToken: () => Promise<void>;
     clearError: () => void;

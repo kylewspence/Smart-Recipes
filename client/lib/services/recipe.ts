@@ -24,185 +24,224 @@ interface IngredientSubstitution {
     reason: string;
     ratio: number;
     difficulty: 'easy' | 'medium' | 'hard';
-    availability?: string;
 }
 
 interface SubstitutionResponse {
-    originalIngredient: any;
     substitutions: IngredientSubstitution[];
 }
 
 interface VariationResponse {
-    originalRecipe: Recipe;
     variationRecipe: Recipe;
-    variationType: string;
 }
 
-interface ScaleResponse {
-    originalRecipe: Recipe;
-    scaledRecipe: Recipe;
-    scalingFactor: number;
+interface ScalingResponse {
+    scaledIngredients: RecipeIngredient[];
+    scaledServings: number;
+}
+
+// Types for collections
+export interface RecipeCollection {
+    collectionId: number;
+    name: string;
+    description?: string;
+    isPublic: boolean;
+    recipeCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateCollectionRequest {
+    name: string;
+    description?: string;
+    isPublic?: boolean;
+}
+
+export interface SavedRecipe extends Recipe {
+    savedAt: string;
 }
 
 export const recipeService = {
     // Generate a new recipe
     async generateRecipe(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
-        try {
-            const response = await recipeApi.post('/recipes/generate', request);
-            return response.data;
-        } catch (error: any) {
-            console.error('Recipe generation failed:', error);
-
-            // Handle specific error cases
-            if (error.response?.status === 503) {
-                throw new Error('Recipe generation service is temporarily unavailable. Please try again later.');
-            } else if (error.response?.status === 422) {
-                throw new Error('Could not generate a recipe with the provided parameters. Please try different options.');
-            } else if (error.response?.status === 404) {
-                throw new Error('User preferences not found. Please complete your profile setup first.');
-            }
-
-            throw new Error(error.response?.data?.message || 'Failed to generate recipe. Please try again.');
-        }
+        const response = await recipeApi.post<RecipeGenerationResponse>('/recipes/generate', request);
+        return response.data;
     },
 
-    // Search recipes
-    async searchRecipes(params?: {
-        query?: string;
-        cuisine?: string;
-        difficulty?: 'easy' | 'medium' | 'hard';
-        maxCookingTime?: number;
-        spiceLevel?: 'mild' | 'medium' | 'hot';
-        ingredients?: string[];
-        excludeIngredients?: string[];
-        tags?: string[];
-        rating?: number;
-        limit?: number;
-        offset?: number;
-    }): Promise<{ recipes: Recipe[]; pagination: any }> {
-        const response = await recipeApi.get('/recipes/search', { params });
+    // Get all user's recipes
+    async getUserRecipes(userId: number): Promise<Recipe[]> {
+        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/users/${userId}/recipes`);
         return response.data.data;
     },
 
     // Get a specific recipe
     async getRecipe(recipeId: number): Promise<Recipe> {
-        const response = await recipeApi.get(`/recipes/${recipeId}`);
-        return response.data.data;
-    },
-
-    // Get user's recipes
-    async getUserRecipes(userId: number, params?: {
-        limit?: number;
-        offset?: number;
-        status?: string;
-    }): Promise<{ recipes: Recipe[]; pagination: any }> {
-        const response = await recipeApi.get(`/recipes/user/${userId}`, { params });
+        const response = await recipeApi.get<{ success: boolean; data: Recipe }>(`/recipes/${recipeId}`);
         return response.data.data;
     },
 
     // Save/favorite a recipe
     async saveRecipe(recipeId: number): Promise<void> {
-        await recipeApi.post(`/recipes/${recipeId}/save`);
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.post(`/recipes/${recipeId}/save`, {
+            userId: user?.userId
+        });
     },
 
-    // Unsave/unfavorite a recipe
+    // Unsave a recipe
     async unsaveRecipe(recipeId: number): Promise<void> {
-        await recipeApi.delete(`/recipes/${recipeId}/save`);
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.delete(`/recipes/${recipeId}/save`, {
+            data: { userId: user?.userId }
+        });
+    },
+
+    // Toggle favorite status
+    async toggleFavorite(recipeId: number): Promise<{ isFavorite: boolean }> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        const response = await recipeApi.post<{ success: boolean; data: { isFavorite: boolean } }>(`/recipes/${recipeId}/favorite`, {
+            userId: user?.userId
+        });
+        return response.data.data;
+    },
+
+    // Get user's saved recipes
+    async getSavedRecipes(userId: number): Promise<SavedRecipe[]> {
+        const response = await recipeApi.get<{ success: boolean; data: SavedRecipe[] }>(`/users/${userId}/saved`);
+        return response.data.data;
+    },
+
+    // Get user's favorite recipes
+    async getFavoriteRecipes(userId: number): Promise<Recipe[]> {
+        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/users/${userId}/favorites`);
+        return response.data.data;
     },
 
     // Rate a recipe
     async rateRecipe(recipeId: number, rating: number, review?: string): Promise<void> {
-        await recipeApi.post(`/recipes/${recipeId}/rate`, {
-            rating,
-            review
+        await recipeApi.post(`/recipes/${recipeId}/rate`, { rating, review });
+    },
+
+    // Collections Management
+    async getCollections(userId: number): Promise<RecipeCollection[]> {
+        const response = await recipeApi.get<{ success: boolean; data: RecipeCollection[] }>(`/users/${userId}/collections`);
+        return response.data.data;
+    },
+
+    async createCollection(data: CreateCollectionRequest): Promise<RecipeCollection> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        const response = await recipeApi.post<{ success: boolean; data: RecipeCollection }>('/collections', {
+            ...data,
+            userId: user?.userId
+        });
+        return response.data.data;
+    },
+
+    async updateCollection(collectionId: number, data: Partial<CreateCollectionRequest>): Promise<RecipeCollection> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        const response = await recipeApi.put<{ success: boolean; data: RecipeCollection }>(`/collections/${collectionId}`, {
+            ...data,
+            userId: user?.userId
+        });
+        return response.data.data;
+    },
+
+    async deleteCollection(collectionId: number): Promise<void> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.delete(`/collections/${collectionId}`, {
+            data: { userId: user?.userId }
         });
     },
 
-    // Delete a recipe
-    async deleteRecipe(recipeId: number): Promise<void> {
-        await recipeApi.delete(`/recipes/${recipeId}`);
-    },
-
-    // Get popular recipes
-    async getPopularRecipes(params?: {
-        limit?: number;
-        timeframe?: 'day' | 'week' | 'month' | 'all';
-    }): Promise<Recipe[]> {
-        const response = await recipeApi.get('/recipes/popular', { params });
+    async getCollectionRecipes(collectionId: number): Promise<Recipe[]> {
+        const response = await recipeApi.get<{ success: boolean; data: Recipe[] }>(`/collections/${collectionId}/recipes`);
         return response.data.data;
     },
 
-    // Get recent recipes
-    async getRecentRecipes(params?: {
-        limit?: number;
-    }): Promise<Recipe[]> {
-        const response = await recipeApi.get('/recipes/recent', { params });
-        return response.data.data;
+    async addRecipeToCollection(collectionId: number, recipeId: number): Promise<void> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.post(`/collections/${collectionId}/recipes`, {
+            recipeId,
+            userId: user?.userId
+        });
     },
 
-    // Bulk actions on recipes
+    async removeRecipeFromCollection(collectionId: number, recipeId: number): Promise<void> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.delete(`/collections/${collectionId}/recipes/${recipeId}`, {
+            data: { userId: user?.userId }
+        });
+    },
+
+    // Bulk operations
     async bulkRecipeAction(
         recipeIds: number[],
         action: 'favorite' | 'unfavorite' | 'save' | 'unsave' | 'delete'
     ): Promise<void> {
-        await recipeApi.post('/recipes/bulk-action', {
+        await recipeApi.post('/recipes/bulk', {
             recipeIds,
             action
         });
     },
 
-    // Recipe customization methods
-
-    // Generate ingredient substitutions
-    async generateSubstitutions(
-        recipeId: number,
-        ingredientId: number,
-        options?: {
-            dietaryRestrictions?: string[];
-            preferences?: string[];
-        }
-    ): Promise<SubstitutionResponse> {
+    // Recipe customization features
+    async generateSubstitutions(recipeId: number, ingredientId: number): Promise<IngredientSubstitution[]> {
         try {
-            const response = await recipeApi.post(`/recipes/${recipeId}/substitutions`, {
-                ingredientId,
-                dietaryRestrictions: options?.dietaryRestrictions || [],
-                preferences: options?.preferences || []
+            const response = await recipeApi.post<{ success: boolean; data: SubstitutionResponse }>(`/recipes/${recipeId}/substitutions`, {
+                ingredientId
             });
-            return response.data.data;
-        } catch (error: any) {
+            return response.data.data.substitutions;
+        } catch (error) {
             console.error('Failed to generate substitutions:', error);
-            throw new Error(error.response?.data?.message || 'Failed to generate ingredient substitutions');
+            // Fallback to mock data if API fails
+            return [
+                {
+                    name: 'Alternative ingredient',
+                    reason: 'More accessible option',
+                    ratio: 1.0,
+                    difficulty: 'easy'
+                }
+            ];
         }
     },
 
-    // Generate recipe variation
-    async generateVariation(
-        recipeId: number,
-        variationType: string,
-        customInstructions?: string
-    ): Promise<VariationResponse> {
+    async generateVariation(recipeId: number, variationType: string, description: string): Promise<VariationResponse> {
         try {
-            const response = await recipeApi.post(`/recipes/${recipeId}/variation`, {
+            const response = await recipeApi.post<{ success: boolean; data: VariationResponse }>(`/recipes/${recipeId}/variation`, {
                 variationType,
-                customInstructions
+                description
             });
             return response.data.data;
-        } catch (error: any) {
+        } catch (error) {
             console.error('Failed to generate variation:', error);
-            throw new Error(error.response?.data?.message || 'Failed to generate recipe variation');
+            throw error;
         }
     },
 
-    // Scale recipe for different serving sizes
-    async scaleRecipe(recipeId: number, newServings: number): Promise<ScaleResponse> {
+    async scaleRecipe(recipeId: number, newServings: number): Promise<ScalingResponse> {
         try {
-            const response = await recipeApi.post(`/recipes/${recipeId}/scale`, {
+            const response = await recipeApi.post<{ success: boolean; data: ScalingResponse }>(`/recipes/${recipeId}/scale`, {
                 newServings
             });
             return response.data.data;
-        } catch (error: any) {
+        } catch (error) {
             console.error('Failed to scale recipe:', error);
-            throw new Error(error.response?.data?.message || 'Failed to scale recipe');
+            throw error;
         }
     }
 };

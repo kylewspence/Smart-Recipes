@@ -194,6 +194,112 @@ router.post('/logout', async (req, res, next) => {
 });
 
 /**
+ * Guest login - creates a temporary guest session
+ * POST /api/auth/guest
+ */
+router.post('/guest', async (req, res, next) => {
+    try {
+        // Check if guest user already exists
+        let guestUser = await db.query(
+            'SELECT "userId", "email", "name" FROM "users" WHERE "email" = $1',
+            ['guest@smartrecipes.demo']
+        );
+
+        // If guest user doesn't exist, create it
+        if (guestUser.rows.length === 0) {
+            const guestResult = await db.query(
+                'INSERT INTO "users" ("email", "name", "passwordHash") VALUES ($1, $2, $3) RETURNING "userId", "email", "name"',
+                ['guest@smartrecipes.demo', 'Guest User', 'guest_no_password_hash']
+            );
+            guestUser = guestResult;
+
+            // Create default preferences for guest user
+            const userId = guestResult.rows[0].userId;
+
+            // Add basic user preferences
+            await db.query(
+                `INSERT INTO "userPreferences" 
+                ("userId", "dietaryRestrictions", "allergies", "cuisinePreferences", "spiceLevel", "maxCookingTime", "servingSize") 
+                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                    userId,
+                    [], // No dietary restrictions
+                    [], // No allergies
+                    ['american', 'italian', 'mexican'], // Popular cuisines
+                    'medium', // Medium spice level
+                    60, // 1 hour max cooking time
+                    4 // Serves 4 people
+                ]
+            );
+
+            // Add some sample ingredient preferences
+            const commonIngredients = [
+                { name: 'chicken', preference: 'like' },
+                { name: 'beef', preference: 'like' },
+                { name: 'pasta', preference: 'like' },
+                { name: 'rice', preference: 'like' },
+                { name: 'tomatoes', preference: 'like' },
+                { name: 'onions', preference: 'like' },
+                { name: 'garlic', preference: 'like' },
+                { name: 'cheese', preference: 'like' },
+                { name: 'broccoli', preference: 'stretch' },
+                { name: 'mushrooms', preference: 'stretch' }
+            ];
+
+            for (const ingredient of commonIngredients) {
+                // First, ensure the ingredient exists
+                let ingredientResult = await db.query(
+                    'SELECT "ingredientId" FROM "ingredients" WHERE "name" = $1',
+                    [ingredient.name]
+                );
+
+                if (ingredientResult.rows.length === 0) {
+                    ingredientResult = await db.query(
+                        'INSERT INTO "ingredients" ("name") VALUES ($1) RETURNING "ingredientId"',
+                        [ingredient.name]
+                    );
+                }
+
+                const ingredientId = ingredientResult.rows[0].ingredientId;
+
+                // Add user preference for this ingredient
+                await db.query(
+                    'INSERT INTO "userIngredientPreferences" ("userId", "ingredientId", "preference") VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+                    [userId, ingredientId, ingredient.preference]
+                );
+            }
+        }
+
+        const user = guestUser.rows[0];
+
+        // Generate tokens for guest session
+        const token = generateToken({
+            userId: user.userId,
+            email: user.email,
+            name: user.name
+        });
+
+        const refreshToken = await generateRefreshToken(user.userId);
+
+        // Return tokens and user data
+        res.status(200).json({
+            user: {
+                userId: user.userId,
+                email: user.email,
+                name: user.name,
+                isGuest: true
+            },
+            token,
+            refreshToken,
+            message: 'Guest session created successfully'
+        });
+    } catch (error) {
+        console.error('Guest login error:', error);
+        next(error);
+    }
+});
+
+/**
  * Get current user
  * GET /api/auth/me
  */

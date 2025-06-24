@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, NutritionalInfo } from '@/lib/types/recipe';
+import { recipeService } from '@/lib/services/recipe';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import RecipeCustomizer from './RecipeCustomizer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -156,24 +158,60 @@ export default function RecipeDisplay({
     isSaved = false,
     isLiked = false,
 }: RecipeDisplayProps) {
+    const { user } = useAuth();
     const [currentRating, setCurrentRating] = useState(recipe.rating || 0);
     const [localIsSaved, setLocalIsSaved] = useState(isSaved);
     const [localIsLiked, setLocalIsLiked] = useState(isLiked);
     const [showCustomizer, setShowCustomizer] = useState(false);
     const [customizedRecipe, setCustomizedRecipe] = useState<Recipe>(recipe);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSave = () => {
-        setLocalIsSaved(!localIsSaved);
-        onSave?.();
+    const handleSave = async () => {
+        if (!user || isLoading) return;
+
+        setIsLoading(true);
+        try {
+            if (localIsSaved) {
+                await recipeService.unsaveRecipe(recipe.id);
+            } else {
+                await recipeService.saveRecipe(recipe.id);
+            }
+            setLocalIsSaved(!localIsSaved);
+            onSave?.();
+        } catch (error) {
+            console.error('Failed to save/unsave recipe:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleLike = () => {
-        setLocalIsLiked(!localIsLiked);
+    const handleLike = async () => {
+        if (!user || isLoading) return;
+
+        setIsLoading(true);
+        try {
+            const result = await recipeService.toggleFavorite(recipe.id);
+            setLocalIsLiked(result.isFavorite);
+        } catch (error) {
+            console.error('Failed to toggle favorite:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleRate = (rating: number) => {
-        setCurrentRating(rating);
-        onRate?.(rating);
+    const handleRate = async (rating: number) => {
+        if (!user || isLoading) return;
+
+        setIsLoading(true);
+        try {
+            await recipeService.rateRecipe(recipe.id, rating);
+            setCurrentRating(rating);
+            onRate?.(rating);
+        } catch (error) {
+            console.error('Failed to rate recipe:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleEdit = () => {
