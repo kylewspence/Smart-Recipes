@@ -12,6 +12,8 @@ import {
     RECIPE_CUISINES,
     DIFFICULTY_LEVELS,
     COOKING_TIME_OPTIONS,
+    SPICE_LEVELS,
+    SERVING_SIZE_OPTIONS,
     Recipe
 } from '@/lib/types/recipe';
 import { UserPreferences } from '@/lib/types/preferences';
@@ -35,6 +37,8 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
         cuisine: 'Any',
         difficulty: 'medium',
         cookingTime: 60,
+        servings: 4,
+        spiceLevel: 'medium',
         includeIngredients: [],
         excludeIngredients: [],
         dietaryRestrictions: []
@@ -68,7 +72,9 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
             setFormData(prev => ({
                 ...prev,
                 dietaryRestrictions: prefs.dietaryRestrictions || [],
-                cookingTime: prefs.maxCookingTime || 60
+                cookingTime: prefs.maxCookingTime || 60,
+                servings: prefs.servingSize || 4,
+                spiceLevel: prefs.spiceLevel || 'medium'
             }));
         } catch (error) {
             console.error('Failed to load user preferences:', error);
@@ -141,12 +147,14 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
 
         try {
             const request: RecipeGenerationRequest = {
-                userId: user.id,
+                userId: Number(user.id),
                 message: formData.message,
                 mealType: formData.mealType,
                 cuisine: formData.cuisine === 'Any' ? undefined : formData.cuisine,
                 difficulty: formData.difficulty,
                 cookingTime: formData.cookingTime,
+                servings: formData.servings,
+                spiceLevel: formData.spiceLevel,
                 includeIngredients: formData.includeIngredients.length > 0 ? formData.includeIngredients : undefined,
                 excludeIngredients: formData.excludeIngredients.length > 0 ? formData.excludeIngredients : undefined,
                 dietaryRestrictions: formData.dietaryRestrictions.length > 0 ? formData.dietaryRestrictions : undefined
@@ -297,6 +305,54 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
                                 >
                                     <Clock className="w-4 h-4 mx-auto mb-1" />
                                     {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Advanced Options Grid */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Serving Size */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Serving Size
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {SERVING_SIZE_OPTIONS.map((option) => (
+                                <button
+                                    key={option.value}
+                                    onClick={() => updateFormData({ servings: option.value })}
+                                    className={`p-2 text-sm rounded-lg border-2 transition-all text-center ${formData.servings === option.value
+                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 text-gray-700 dark:text-gray-300'
+                                        }`}
+                                >
+                                    <div className="text-sm font-medium">{option.label}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">{option.description}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Spice Level */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Spice Level
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {SPICE_LEVELS.map((level) => (
+                                <button
+                                    key={level.value}
+                                    onClick={() => updateFormData({ spiceLevel: level.value })}
+                                    className={`p-3 rounded-lg border-2 transition-all text-center ${formData.spiceLevel === level.value
+                                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 text-gray-700 dark:text-gray-300'
+                                        }`}
+                                >
+                                    <div className="text-lg mb-1">{level.emoji}</div>
+                                    <div className="text-sm font-medium">{level.label}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">{level.description}</div>
                                 </button>
                             ))}
                         </div>
