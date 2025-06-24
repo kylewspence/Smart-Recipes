@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import RecipeGenerationForm from '@/components/recipe/RecipeGenerationForm';
 import RecipeGenerationLoading from '@/components/recipe/RecipeGenerationLoading';
+import RecipeDisplay from '@/components/recipe/RecipeDisplay';
 import { Recipe } from '@/lib/types/recipe';
-import { Clock, Users, ChefHat, Bookmark, Share2, Star } from 'lucide-react';
+import { ChefHat } from 'lucide-react';
 
 export default function RecipeGeneratorPage() {
     const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
@@ -96,106 +97,43 @@ export default function RecipeGeneratorPage() {
                                     )}
 
                                     {generatedRecipe && (
-                                        <motion.div
+                                        <RecipeDisplay
                                             key="recipe"
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -20 }}
-                                            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden"
-                                        >
-                                            {/* Recipe Header */}
-                                            <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <h2 className="text-2xl font-bold mb-2">{generatedRecipe.title}</h2>
-                                                        <p className="text-orange-100">{generatedRecipe.description}</p>
-                                                    </div>
-                                                    <div className="flex space-x-2">
-                                                        <button className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
-                                                            <Bookmark className="w-5 h-5" />
-                                                        </button>
-                                                        <button className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
-                                                            <Share2 className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Recipe Info */}
-                                            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                                <div className="grid grid-cols-3 gap-4 text-center">
-                                                    <div className="flex flex-col items-center">
-                                                        <Clock className="w-6 h-6 text-orange-500 mb-2" />
-                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Prep + Cook</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-white">
-                                                            {(generatedRecipe.prepTime || 0) + (generatedRecipe.cookingTime || 0)} min
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col items-center">
-                                                        <Users className="w-6 h-6 text-orange-500 mb-2" />
-                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Servings</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-white">
-                                                            {generatedRecipe.servings || 4}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col items-center">
-                                                        <Star className="w-6 h-6 text-orange-500 mb-2" />
-                                                        <span className="text-sm text-gray-600 dark:text-gray-400">Difficulty</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-white capitalize">
-                                                            {generatedRecipe.difficulty || 'Medium'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Ingredients */}
-                                            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Ingredients</h3>
-                                                <div className="space-y-2">
-                                                    {generatedRecipe.ingredients?.map((ingredient, index) => (
-                                                        <div key={index} className="flex items-center space-x-3">
-                                                            <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                                                            <span className="text-gray-700 dark:text-gray-300">
-                                                                <span className="font-medium">{ingredient.amount} {ingredient.unit}</span> {ingredient.name}
-                                                                {ingredient.preparation && (
-                                                                    <span className="text-gray-500 dark:text-gray-400"> ({ingredient.preparation})</span>
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Instructions */}
-                                            <div className="p-6">
-                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Instructions</h3>
-                                                <div className="space-y-4">
-                                                    {generatedRecipe.instructions?.map((instruction, index) => (
-                                                        <div key={index} className="flex space-x-4">
-                                                            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-                                                                {index + 1}
-                                                            </div>
-                                                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed pt-1">
-                                                                {instruction}
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="p-6 bg-gray-50 dark:bg-gray-800 flex space-x-4">
-                                                <button
-                                                    onClick={resetGenerator}
-                                                    className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                                >
-                                                    Generate Another
-                                                </button>
-                                                <button className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium hover:from-orange-600 hover:to-red-700 transition-all">
-                                                    Save Recipe
-                                                </button>
-                                            </div>
-                                        </motion.div>
+                                            recipe={generatedRecipe}
+                                            onSave={() => {
+                                                console.log('Save recipe:', generatedRecipe.title);
+                                                // TODO: Implement recipe saving functionality
+                                            }}
+                                            onGenerateAnother={resetGenerator}
+                                            onShare={() => {
+                                                console.log('Share recipe:', generatedRecipe.title);
+                                                // TODO: Implement recipe sharing functionality
+                                            }}
+                                            onGenerateVariation={() => {
+                                                console.log('Generate variation for:', generatedRecipe.title);
+                                                // TODO: Implement recipe variation generation
+                                            }}
+                                            onEdit={() => {
+                                                console.log('Edit recipe:', generatedRecipe.title);
+                                                // TODO: Implement recipe editing functionality
+                                            }}
+                                            onCopy={() => {
+                                                console.log('Copy recipe:', generatedRecipe.title);
+                                                // TODO: Implement recipe copying functionality
+                                            }}
+                                            onPrint={() => {
+                                                console.log('Print recipe:', generatedRecipe.title);
+                                                // TODO: Implement recipe printing functionality
+                                            }}
+                                            onRate={(rating) => {
+                                                console.log('Rate recipe:', generatedRecipe.title, 'Rating:', rating);
+                                                // TODO: Implement recipe rating functionality
+                                            }}
+                                            showActions={true}
+                                            showNutrition={true}
+                                            showRating={true}
+                                            variant="default"
+                                        />
                                     )}
 
                                     {!isGenerating && !generatedRecipe && (
