@@ -231,48 +231,11 @@ router.post('/guest', async (req, res, next) => {
                     4 // Serves 4 people
                 ]
             );
-
-            // Add some sample ingredient preferences
-            const commonIngredients = [
-                { name: 'chicken', preference: 'like' },
-                { name: 'beef', preference: 'like' },
-                { name: 'pasta', preference: 'like' },
-                { name: 'rice', preference: 'like' },
-                { name: 'tomatoes', preference: 'like' },
-                { name: 'onions', preference: 'like' },
-                { name: 'garlic', preference: 'like' },
-                { name: 'cheese', preference: 'like' },
-                { name: 'broccoli', preference: 'stretch' },
-                { name: 'mushrooms', preference: 'stretch' }
-            ];
-
-            for (const ingredient of commonIngredients) {
-                // First, ensure the ingredient exists
-                let ingredientResult = await db.query(
-                    'SELECT "ingredientId" FROM "ingredients" WHERE "name" = $1',
-                    [ingredient.name]
-                );
-
-                if (ingredientResult.rows.length === 0) {
-                    ingredientResult = await db.query(
-                        'INSERT INTO "ingredients" ("name") VALUES ($1) RETURNING "ingredientId"',
-                        [ingredient.name]
-                    );
-                }
-
-                const ingredientId = ingredientResult.rows[0].ingredientId;
-
-                // Add user preference for this ingredient
-                await db.query(
-                    'INSERT INTO "userIngredientPreferences" ("userId", "ingredientId", "preference") VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-                    [userId, ingredientId, ingredient.preference]
-                );
-            }
         }
 
         const user = guestUser.rows[0];
 
-        // Generate tokens for guest session
+        // Generate tokens
         const token = generateToken({
             userId: user.userId,
             email: user.email,
@@ -291,10 +254,11 @@ router.post('/guest', async (req, res, next) => {
             },
             token,
             refreshToken,
+            expiresIn: 3600, // 1 hour
             message: 'Guest session created successfully'
         });
     } catch (error) {
-        console.error('Guest login error:', error);
+        console.error('❌ Guest login error:', error);
         next(error);
     }
 });

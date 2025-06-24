@@ -29,6 +29,7 @@
     "ioredis": "^5.6.1",
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "openai": "^5.1.1",
     "pg": "^8.7.3",
     "redis": "^5.5.6",
