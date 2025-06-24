@@ -1,10 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { preferencesService } from '@/lib/services/preferences';
 import { UserPreferences } from '@/lib/types/preferences';
 import { Button } from '@/components/ui/button';
+import {
+    downloadPreferences,
+    parseImportFile,
+    validateImportedPreferences,
+    applyPresetTemplate,
+    generateShareableLink,
+    copyToClipboard,
+    PREFERENCE_TEMPLATES,
+    PreferenceTemplate
+} from '@/lib/utils/preference-import-export';
 
 interface PreferenceChanges {
     dietary: boolean;
@@ -25,8 +35,16 @@ export default function PreferenceManager() {
         cooking: false,
         ingredients: false
     });
-    const [activeTab, setActiveTab] = useState<'dietary' | 'cooking' | 'ingredients'>('dietary');
+    const [activeTab, setActiveTab] = useState<'dietary' | 'cooking' | 'ingredients' | 'import-export'>('dietary');
     const [message, setMessage] = useState<string>('');
+
+    // Import/Export state
+    const [importPreview, setImportPreview] = useState<UserPreferences | null>(null);
+    const [importErrors, setImportErrors] = useState<string[]>([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const [shareLink, setShareLink] = useState<string>('');
+    const [selectedTemplate, setSelectedTemplate] = useState<PreferenceTemplate | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Load user preferences
     const loadPreferences = useCallback(async () => {
@@ -166,6 +184,111 @@ export default function PreferenceManager() {
         }
     };
 
+    // Import/Export handlers
+    const handleExport = () => {
+        if (preferences && user?.id) {
+            downloadPreferences(preferences, user.id.toString());
+            setMessage('Your preferences have been exported successfully!');
+        }
+    };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsImporting(true);
+            setImportErrors([]);
+            setImportPreview(null);
+
+            const data = await parseImportFile(file);
+            const validation = validateImportedPreferences(data);
+
+            if (validation.isValid && validation.preferences) {
+                setImportPreview(validation.preferences);
+                setMessage('File imported successfully! Review the preview below and click "Apply Import" to save.');
+            } else {
+                setImportErrors(validation.errors);
+                setMessage('Import failed. Please check the errors below and fix your file.');
+            }
+        } catch (error: any) {
+            setImportErrors([error.message || 'Failed to read file']);
+            setMessage('Failed to import file. Please ensure it\'s a valid JSON file.');
+        } finally {
+            setIsImporting(false);
+            // Clear the file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleApplyImport = async () => {
+        if (!importPreview || !user?.id) return;
+
+        try {
+            setSaving(true);
+            setMessage('');
+
+            // Apply the imported preferences
+            await preferencesService.updateUserPreferences(user.id.toString(), importPreview);
+
+            if (importPreview.ingredientPreferences?.length) {
+                await preferencesService.bulkUpdateIngredientPreferences(
+                    user.id.toString(),
+                    importPreview.ingredientPreferences
+                );
+            }
+
+            // Reload preferences to reflect changes
+            await loadPreferences();
+
+            // Clear import state
+            setImportPreview(null);
+            setImportErrors([]);
+            setMessage('Preferences imported and saved successfully!');
+        } catch (error: any) {
+            console.error('Failed to apply imported preferences:', error);
+            setMessage('Failed to save imported preferences. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancelImport = () => {
+        setImportPreview(null);
+        setImportErrors([]);
+        setMessage('');
+    };
+
+    const handleApplyTemplate = async (template: PreferenceTemplate) => {
+        if (!preferences) return;
+
+        const updatedPreferences = applyPresetTemplate(template, preferences);
+        setPreferences(updatedPreferences);
+        setSelectedTemplate(null);
+        setMessage(`"${template.name}" template applied! Don't forget to save your changes.`);
+    };
+
+    const handleGenerateShareLink = () => {
+        if (preferences) {
+            const link = generateShareableLink(preferences);
+            setShareLink(link);
+            setMessage('Share link generated! Copy the link below to share your preferences.');
+        }
+    };
+
+    const handleCopyShareLink = async () => {
+        if (shareLink) {
+            const success = await copyToClipboard(shareLink);
+            if (success) {
+                setMessage('Share link copied to clipboard!');
+            } else {
+                setMessage('Failed to copy link. Please copy it manually.');
+            }
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
@@ -241,8 +364,8 @@ export default function PreferenceManager() {
                 {/* Message Display */}
                 {message && (
                     <div className={`mb-6 p-4 rounded-lg ${message.includes('success') || message.includes('saved') || message.includes('reset')
-                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                        : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                         }`}>
                         {message}
                     </div>
@@ -270,8 +393,8 @@ export default function PreferenceManager() {
                         <button
                             onClick={() => setActiveTab('dietary')}
                             className={`px-4 py-2 border-b-2 font-medium text-sm ${activeTab === 'dietary'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 } flex items-center gap-2`}
                         >
                             {changes.dietary && <div className="w-2 h-2 bg-orange-500 rounded-full" />}
@@ -280,8 +403,8 @@ export default function PreferenceManager() {
                         <button
                             onClick={() => setActiveTab('cooking')}
                             className={`px-4 py-2 border-b-2 font-medium text-sm ${activeTab === 'cooking'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 } flex items-center gap-2`}
                         >
                             {changes.cooking && <div className="w-2 h-2 bg-orange-500 rounded-full" />}
@@ -290,12 +413,21 @@ export default function PreferenceManager() {
                         <button
                             onClick={() => setActiveTab('ingredients')}
                             className={`px-4 py-2 border-b-2 font-medium text-sm ${activeTab === 'ingredients'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 } flex items-center gap-2`}
                         >
                             {changes.ingredients && <div className="w-2 h-2 bg-orange-500 rounded-full" />}
                             Ingredients
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('import-export')}
+                            className={`px-4 py-2 border-b-2 font-medium text-sm ${activeTab === 'import-export'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                } flex items-center gap-2`}
+                        >
+                            Import/Export
                         </button>
                     </div>
                 </div>
@@ -456,8 +588,8 @@ export default function PreferenceManager() {
                                         <div className="flex items-center gap-3">
                                             <span>{pref.name}</span>
                                             <span className={`px-2 py-1 rounded-full text-xs ${pref.preference === 'like' ? 'bg-green-100 text-green-800' :
-                                                    pref.preference === 'dislike' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                pref.preference === 'dislike' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {pref.preference}
                                             </span>
@@ -477,6 +609,220 @@ export default function PreferenceManager() {
                                 {(!preferences.ingredientPreferences || preferences.ingredientPreferences.length === 0) && (
                                     <p className="text-gray-500 italic">No ingredient preferences set</p>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'import-export' && (
+                        <div className="space-y-8">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-2">Import/Export & Sharing</h3>
+                                <p className="text-muted-foreground mb-4">
+                                    Backup your preferences, apply preset templates, or share your settings with others
+                                </p>
+                            </div>
+
+                            {/* Export Section */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    📤 Export Preferences
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Download your current preferences as a JSON file for backup or sharing.
+                                </p>
+                                <Button onClick={handleExport} className="w-full sm:w-auto">
+                                    Download Preferences
+                                </Button>
+                            </div>
+
+                            {/* Import Section */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    📥 Import Preferences
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Upload a preferences file to restore your settings or apply someone else's preferences.
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".json"
+                                            onChange={handleFileUpload}
+                                            className="block w-full text-sm text-gray-500 dark:text-gray-400
+                                                file:mr-4 file:py-2 file:px-4
+                                                file:rounded-lg file:border-0
+                                                file:text-sm file:font-medium
+                                                file:bg-primary file:text-primary-foreground
+                                                hover:file:bg-primary/90
+                                                file:cursor-pointer cursor-pointer"
+                                            disabled={isImporting}
+                                        />
+                                    </div>
+
+                                    {/* Import Errors */}
+                                    {importErrors.length > 0 && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                            <h5 className="font-medium text-red-800 dark:text-red-200 mb-2">Import Errors:</h5>
+                                            <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300 space-y-1">
+                                                {importErrors.map((error, index) => (
+                                                    <li key={index}>{error}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Import Preview */}
+                                    {importPreview && (
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                            <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-3">Preview Imported Preferences:</h5>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <strong>Dietary Restrictions:</strong>
+                                                    <p className="text-muted-foreground">
+                                                        {importPreview.dietaryRestrictions?.length ?
+                                                            importPreview.dietaryRestrictions.join(', ') : 'None'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <strong>Allergies:</strong>
+                                                    <p className="text-muted-foreground">
+                                                        {importPreview.allergies?.length ?
+                                                            importPreview.allergies.join(', ') : 'None'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <strong>Cuisines:</strong>
+                                                    <p className="text-muted-foreground">
+                                                        {importPreview.cuisinePreferences?.length ?
+                                                            importPreview.cuisinePreferences.join(', ') : 'None'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <strong>Settings:</strong>
+                                                    <p className="text-muted-foreground">
+                                                        Spice: {importPreview.spiceLevel},
+                                                        Time: {importPreview.maxCookingTime}min,
+                                                        Serves: {importPreview.servingSize}
+                                                    </p>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <strong>Ingredient Preferences:</strong>
+                                                    <p className="text-muted-foreground">
+                                                        {importPreview.ingredientPreferences?.length || 0} preferences
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 mt-4">
+                                                <Button
+                                                    onClick={handleApplyImport}
+                                                    disabled={saving}
+                                                    className="flex-1 sm:flex-none"
+                                                >
+                                                    {saving ? 'Applying...' : 'Apply Import'}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={handleCancelImport}
+                                                    disabled={saving}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Preset Templates */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    🎯 Preset Templates
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Quick-start with common dietary preference templates.
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {PREFERENCE_TEMPLATES.map((template) => (
+                                        <div
+                                            key={template.id}
+                                            className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:border-primary transition-colors cursor-pointer"
+                                            onClick={() => setSelectedTemplate(template)}
+                                        >
+                                            <h5 className="font-medium mb-2">{template.name}</h5>
+                                            <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                                            <div className="flex flex-wrap gap-1 mb-3">
+                                                {template.tags.map((tag) => (
+                                                    <span
+                                                        key={tag}
+                                                        className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleApplyTemplate(template);
+                                                }}
+                                            >
+                                                Apply Template
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Sharing Section */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    🔗 Share Preferences
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Generate a shareable link to your preferences for family members or friends.
+                                </p>
+
+                                <div className="space-y-4">
+                                    <Button
+                                        onClick={handleGenerateShareLink}
+                                        variant="outline"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Generate Share Link
+                                    </Button>
+
+                                    {shareLink && (
+                                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                                            <label className="text-sm font-medium mb-2 block">
+                                                Share Link (Copy this URL):
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={shareLink}
+                                                    readOnly
+                                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    onClick={handleCopyShareLink}
+                                                >
+                                                    Copy
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                Note: This is a demo link. In production, this would create a secure shareable link.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
