@@ -49,7 +49,7 @@ Create an intuitive and comprehensive multi-step preference system that captures
 Test complete preference flow including validation, saving, editing, and user experience across devices
 
 # Subtasks:
-## 6.1. Create Multi-step Onboarding Flow [pending]
+## 6.1. Create Multi-step Onboarding Flow [done]
 ### Dependencies: None
 ### Description: Build intuitive step-by-step preference setup with excellent UX
 ### Details:
