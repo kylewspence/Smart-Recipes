@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { RecipeGenerationRequest, RecipeGenerationResponse, Recipe } from '../types/recipe';
+import { RecipeGenerationRequest, RecipeGenerationResponse, Recipe, RecipeIngredient } from '../types/recipe';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -17,6 +17,32 @@ recipeApi.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Types for customization features
+interface IngredientSubstitution {
+    name: string;
+    reason: string;
+    ratio: number;
+    difficulty: 'easy' | 'medium' | 'hard';
+    availability?: string;
+}
+
+interface SubstitutionResponse {
+    originalIngredient: any;
+    substitutions: IngredientSubstitution[];
+}
+
+interface VariationResponse {
+    originalRecipe: Recipe;
+    variationRecipe: Recipe;
+    variationType: string;
+}
+
+interface ScaleResponse {
+    originalRecipe: Recipe;
+    scaledRecipe: Recipe;
+    scalingFactor: number;
+}
 
 export const recipeService = {
     // Generate a new recipe
@@ -123,5 +149,60 @@ export const recipeService = {
             recipeIds,
             action
         });
+    },
+
+    // Recipe customization methods
+
+    // Generate ingredient substitutions
+    async generateSubstitutions(
+        recipeId: number,
+        ingredientId: number,
+        options?: {
+            dietaryRestrictions?: string[];
+            preferences?: string[];
+        }
+    ): Promise<SubstitutionResponse> {
+        try {
+            const response = await recipeApi.post(`/recipes/${recipeId}/substitutions`, {
+                ingredientId,
+                dietaryRestrictions: options?.dietaryRestrictions || [],
+                preferences: options?.preferences || []
+            });
+            return response.data.data;
+        } catch (error: any) {
+            console.error('Failed to generate substitutions:', error);
+            throw new Error(error.response?.data?.message || 'Failed to generate ingredient substitutions');
+        }
+    },
+
+    // Generate recipe variation
+    async generateVariation(
+        recipeId: number,
+        variationType: string,
+        customInstructions?: string
+    ): Promise<VariationResponse> {
+        try {
+            const response = await recipeApi.post(`/recipes/${recipeId}/variation`, {
+                variationType,
+                customInstructions
+            });
+            return response.data.data;
+        } catch (error: any) {
+            console.error('Failed to generate variation:', error);
+            throw new Error(error.response?.data?.message || 'Failed to generate recipe variation');
+        }
+    },
+
+    // Scale recipe for different serving sizes
+    async scaleRecipe(recipeId: number, newServings: number): Promise<ScaleResponse> {
+        try {
+            const response = await recipeApi.post(`/recipes/${recipeId}/scale`, {
+                newServings
+            });
+            return response.data.data;
+        } catch (error: any) {
+            console.error('Failed to scale recipe:', error);
+            throw new Error(error.response?.data?.message || 'Failed to scale recipe');
+        }
     }
 };

@@ -1184,4 +1184,210 @@ router.get('/user/:userId/saved', async (req, res, next) => {
     }
 });
 
+/**
+ * Generate ingredient substitutions for a recipe
+ * POST /api/recipes/:recipeId/substitutions
+ */
+router.post('/:recipeId/substitutions', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const { ingredientId, dietaryRestrictions = [], preferences = [] } = req.body;
+
+        if (!ingredientId) {
+            throw new ClientError(400, 'Ingredient ID is required');
+        }
+
+        // Get the original ingredient
+        const ingredientResult = await db.query(
+            'SELECT * FROM "ingredients" WHERE "ingredientId" = $1',
+            [ingredientId]
+        );
+
+        if (ingredientResult.rows.length === 0) {
+            throw new ClientError(404, 'Ingredient not found');
+        }
+
+        const ingredient = ingredientResult.rows[0];
+
+        // Mock AI-generated substitutions (in real implementation, this would call OpenAI)
+        const mockSubstitutions = [
+            {
+                name: `${ingredient.name} alternative 1`,
+                reason: 'Lower sodium option',
+                ratio: 1.0,
+                difficulty: 'easy',
+                availability: 'common'
+            },
+            {
+                name: `${ingredient.name} alternative 2`,
+                reason: 'More accessible ingredient',
+                ratio: 1.2,
+                difficulty: 'easy',
+                availability: 'common'
+            },
+            {
+                name: `${ingredient.name} substitute 3`,
+                reason: 'Healthier alternative',
+                ratio: 0.8,
+                difficulty: 'medium',
+                availability: 'specialty'
+            }
+        ];
+
+        res.json({
+            success: true,
+            data: {
+                originalIngredient: ingredient,
+                substitutions: mockSubstitutions
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Generate recipe variation
+ * POST /api/recipes/:recipeId/variation
+ */
+router.post('/:recipeId/variation', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const { variationType, customInstructions } = req.body;
+
+        if (!variationType) {
+            throw new ClientError(400, 'Variation type is required');
+        }
+
+        // Get the original recipe
+        const recipeResult = await db.query(
+            `SELECT r.*, 
+                    COALESCE(
+                        (SELECT json_agg(
+                            json_build_object(
+                                'ingredientId', ri."ingredientId",
+                                'name', i."name",
+                                'quantity', ri."quantity"
+                            )
+                        )
+                        FROM "recipeIngredients" ri
+                        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                        WHERE ri."recipeId" = r."recipeId"
+                        ), '[]'::json) as ingredients,
+                    COALESCE(
+                        (SELECT json_agg(rt."tag")
+                        FROM "recipeTags" rt
+                        WHERE rt."recipeId" = r."recipeId"
+                        ), '[]'::json) as tags
+            FROM "recipes" r
+            WHERE r."recipeId" = $1`,
+            [recipeId]
+        );
+
+        if (recipeResult.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found');
+        }
+
+        const originalRecipe = recipeResult.rows[0];
+
+        // Mock variation generation (in real implementation, this would call OpenAI)
+        const originalInstructions = Array.isArray(originalRecipe.instructions)
+            ? originalRecipe.instructions
+            : [originalRecipe.instructions];
+
+        const variationRecipe = {
+            ...originalRecipe,
+            title: `${originalRecipe.title} (${variationType})`,
+            description: `${originalRecipe.description} - Adapted for ${variationType.toLowerCase()}`,
+            instructions: [
+                `Modified for ${variationType.toLowerCase()}:`,
+                ...originalInstructions
+            ],
+            // Adjust cooking time based on variation type
+            cookingTime: variationType === 'air-fryer' ?
+                Math.max(10, originalRecipe.cookingTime - 10) :
+                variationType === 'slow-cooker' ?
+                    originalRecipe.cookingTime + 120 :
+                    originalRecipe.cookingTime
+        };
+
+        res.json({
+            success: true,
+            data: {
+                originalRecipe,
+                variationRecipe,
+                variationType
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Scale recipe ingredients for different serving sizes
+ * POST /api/recipes/:recipeId/scale
+ */
+router.post('/:recipeId/scale', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const { newServings } = req.body;
+
+        if (!newServings || newServings <= 0) {
+            throw new ClientError(400, 'Valid serving size is required');
+        }
+
+        // Get the recipe with ingredients
+        const recipeResult = await db.query(
+            `SELECT r.*, 
+                    COALESCE(
+                        (SELECT json_agg(
+                            json_build_object(
+                                'ingredientId', ri."ingredientId",
+                                'name', i."name",
+                                'quantity', ri."quantity"
+                            )
+                        )
+                        FROM "recipeIngredients" ri
+                        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                        WHERE ri."recipeId" = r."recipeId"
+                        ), '[]'::json) as ingredients
+            FROM "recipes" r
+            WHERE r."recipeId" = $1`,
+            [recipeId]
+        );
+
+        if (recipeResult.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found');
+        }
+
+        const recipe = recipeResult.rows[0];
+        const originalServings = recipe.servings || 4;
+        const scalingFactor = newServings / originalServings;
+
+        // Scale ingredients
+        const scaledIngredients = recipe.ingredients.map((ingredient: any) => ({
+            ...ingredient,
+            quantity: Math.round((parseFloat(ingredient.quantity) * scalingFactor) * 100) / 100
+        }));
+
+        const scaledRecipe = {
+            ...recipe,
+            servings: newServings,
+            ingredients: scaledIngredients
+        };
+
+        res.json({
+            success: true,
+            data: {
+                originalRecipe: recipe,
+                scaledRecipe,
+                scalingFactor
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
