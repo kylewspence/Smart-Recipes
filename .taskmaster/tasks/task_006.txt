@@ -137,7 +137,7 @@ Build interface for selecting ingredient preferences with advanced search, categ
 - Integrate with current database schema (database/schema.sql)
 - Maintain compatibility with existing UI components (client/components/)
 
-## 6.3. Implement Preference Editing & Management [pending]
+## 6.3. Implement Preference Editing & Management [done]
 ### Dependencies: None
 ### Description: Allow users to easily edit and manage their preferences
 ### Details:
