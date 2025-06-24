@@ -52,7 +52,7 @@ export default function PreferenceManager() {
 
         try {
             setLoading(true);
-            const userPrefs = await preferencesService.getUserPreferences(user.id.toString());
+            const userPrefs = await preferencesService.getUserPreferences(user.userId.toString());
             setPreferences(userPrefs);
             setOriginalPreferences(JSON.parse(JSON.stringify(userPrefs))); // Deep copy
             setChanges({ dietary: false, cooking: false, ingredients: false });
@@ -108,7 +108,7 @@ export default function PreferenceManager() {
 
             // Save basic preferences if dietary or cooking changed
             if (changes.dietary || changes.cooking) {
-                await preferencesService.updateUserPreferences(user.id.toString(), {
+                await preferencesService.updateUserPreferences(user.userId.toString(), {
                     dietaryRestrictions: preferences.dietaryRestrictions,
                     allergies: preferences.allergies,
                     cuisinePreferences: preferences.cuisinePreferences,
@@ -121,7 +121,7 @@ export default function PreferenceManager() {
             // Save ingredient preferences if changed
             if (changes.ingredients && preferences.ingredientPreferences) {
                 await preferencesService.bulkUpdateIngredientPreferences(
-                    user.id.toString(),
+                    user.userId.toString(),
                     preferences.ingredientPreferences
                 );
             }
@@ -186,8 +186,8 @@ export default function PreferenceManager() {
 
     // Import/Export handlers
     const handleExport = () => {
-        if (preferences && user?.id) {
-            downloadPreferences(preferences, user.id.toString());
+        if (preferences && user?.userId) {
+            downloadPreferences(preferences, user.userId.toString());
             setMessage('Your preferences have been exported successfully!');
         }
     };

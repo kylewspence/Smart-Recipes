@@ -65,7 +65,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
         if (!user?.id) return;
 
         try {
-            const prefs = await preferencesService.getUserPreferences(user.id);
+            const prefs = await preferencesService.getUserPreferences(user.userId.toString());
             setUserPreferences(prefs);
 
             // Pre-fill form with user preferences
@@ -147,7 +147,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
 
         try {
             const request: RecipeGenerationRequest = {
-                userId: Number(user.id),
+                userId: user.userId,
                 message: formData.message,
                 mealType: formData.mealType,
                 cuisine: formData.cuisine === 'Any' ? undefined : formData.cuisine,

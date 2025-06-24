@@ -324,7 +324,7 @@ export default function CollectionsManager({
         setError(null);
 
         try {
-            const userCollections = await recipeService.getCollections(user.id);
+            const userCollections = await recipeService.getCollections(user.userId);
             setCollections(userCollections);
         } catch (error: any) {
             setError('Failed to load collections');

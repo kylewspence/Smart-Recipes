@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,9 @@ import { recipeService, RecipeCollection } from '@/lib/services/recipe';
 import { Recipe } from '@/lib/types/recipe';
 import RecipeDisplay from '@/components/recipe/RecipeDisplay';
 import CollectionsManager from '@/components/recipe/CollectionsManager';
+import AdvancedRecipeFilters, { FilterOptions } from '@/components/recipe/AdvancedRecipeFilters';
+import BulkRecipeActions from '@/components/recipe/BulkRecipeActions';
+import SelectableRecipeCard from '@/components/recipe/SelectableRecipeCard';
 import {
     Search,
     Filter,
@@ -22,7 +25,9 @@ import {
     ChefHat,
     Clock,
     Users,
-    Star
+    Star,
+    CheckSquare,
+    Square
 } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
@@ -151,11 +156,36 @@ export default function SavedRecipesPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedCollection, setSelectedCollection] = useState<RecipeCollection | null>(null);
 
+    // Advanced filtering and bulk operations state
+    const [selectedRecipes, setSelectedRecipes] = useState<number[]>([]);
+    const [bulkMode, setBulkMode] = useState(false);
+    const [collections, setCollections] = useState<RecipeCollection[]>([]);
+    const [filters, setFilters] = useState<FilterOptions>({
+        cuisines: [],
+        cookingTime: {},
+        difficulty: [],
+        dietaryRestrictions: [],
+        rating: {},
+        sortBy: 'dateAdded',
+        sortOrder: 'desc'
+    });
+
     useEffect(() => {
         if (user) {
             loadRecipes();
+            loadCollections();
         }
     }, [user, activeTab]);
+
+    const loadCollections = async () => {
+        if (!user) return;
+        try {
+            const userCollections = await recipeService.getCollections(user.userId);
+            setCollections(userCollections);
+        } catch (error) {
+            console.error('Failed to load collections:', error);
+        }
+    };
 
     const loadRecipes = async () => {
         if (!user) return;
@@ -165,10 +195,10 @@ export default function SavedRecipesPage() {
 
         try {
             if (activeTab === 'saved') {
-                const recipes = await recipeService.getSavedRecipes(user.id);
+                const recipes = await recipeService.getSavedRecipes(user.userId);
                 setSavedRecipes(recipes);
             } else if (activeTab === 'favorites') {
-                const recipes = await recipeService.getFavoriteRecipes(user.id);
+                const recipes = await recipeService.getFavoriteRecipes(user.userId);
                 setFavoriteRecipes(recipes);
             }
         } catch (error: any) {
@@ -187,16 +217,96 @@ export default function SavedRecipesPage() {
         setFavoriteRecipes(prev => prev.filter(r => r.id !== recipeId));
     };
 
-    const filteredRecipes = () => {
+    // Advanced filtering and sorting logic
+    const filteredAndSortedRecipes = useMemo(() => {
         const recipes = activeTab === 'saved' ? savedRecipes : favoriteRecipes;
-        if (!searchQuery) return recipes;
+        let filtered = [...recipes];
 
-        return recipes.filter(recipe =>
-            recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            recipe.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            recipe.cuisine?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    };
+        // Apply search filter
+        if (searchQuery) {
+            filtered = filtered.filter(recipe =>
+                recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                recipe.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                recipe.cuisine?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                recipe.ingredients?.some(ing =>
+                    ing.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+            );
+        }
+
+        // Apply cuisine filter
+        if (filters.cuisines.length > 0) {
+            filtered = filtered.filter(recipe =>
+                filters.cuisines.includes(recipe.cuisine || 'Other')
+            );
+        }
+
+        // Apply cooking time filter
+        if (filters.cookingTime.min !== undefined || filters.cookingTime.max !== undefined) {
+            filtered = filtered.filter(recipe => {
+                const cookTime = recipe.cookingTime || 0;
+                const minTime = filters.cookingTime.min || 0;
+                const maxTime = filters.cookingTime.max || Infinity;
+                return cookTime >= minTime && cookTime <= maxTime;
+            });
+        }
+
+        // Apply difficulty filter
+        if (filters.difficulty.length > 0) {
+            filtered = filtered.filter(recipe =>
+                filters.difficulty.includes(recipe.difficulty?.toLowerCase() || 'easy')
+            );
+        }
+
+        // Apply dietary restrictions filter
+        if (filters.dietaryRestrictions.length > 0) {
+            filtered = filtered.filter(recipe =>
+                filters.dietaryRestrictions.some(restriction =>
+                    recipe.tags?.some(tag =>
+                        tag.toLowerCase().includes(restriction.toLowerCase())
+                    )
+                )
+            );
+        }
+
+        // Apply rating filter
+        if (filters.rating.min !== undefined && filters.rating.min > 0) {
+            filtered = filtered.filter(recipe =>
+                (recipe.rating || 0) >= filters.rating.min!
+            );
+        }
+
+        // Apply sorting
+        filtered.sort((a, b) => {
+            let comparison = 0;
+
+            switch (filters.sortBy) {
+                case 'title':
+                    comparison = a.title.localeCompare(b.title);
+                    break;
+                case 'cookingTime':
+                    comparison = (a.cookingTime || 0) - (b.cookingTime || 0);
+                    break;
+                case 'rating':
+                    comparison = (b.rating || 0) - (a.rating || 0);
+                    break;
+                case 'difficulty':
+                    const difficultyOrder = { easy: 1, medium: 2, hard: 3 };
+                    const aDiff = difficultyOrder[a.difficulty?.toLowerCase() as keyof typeof difficultyOrder] || 1;
+                    const bDiff = difficultyOrder[b.difficulty?.toLowerCase() as keyof typeof difficultyOrder] || 1;
+                    comparison = aDiff - bDiff;
+                    break;
+                case 'dateAdded':
+                default:
+                    comparison = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+                    break;
+            }
+
+            return filters.sortOrder === 'asc' ? comparison : -comparison;
+        });
+
+        return filtered;
+    }, [savedRecipes, favoriteRecipes, activeTab, searchQuery, filters]);
 
     if (!user) {
         return (
@@ -298,6 +408,18 @@ export default function SavedRecipesPage() {
                             </div>
                             <div className="flex space-x-2">
                                 <Button
+                                    variant={bulkMode ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => {
+                                        setBulkMode(!bulkMode);
+                                        setSelectedRecipes([]);
+                                    }}
+                                    className="flex items-center"
+                                >
+                                    {bulkMode ? <CheckSquare className="w-4 h-4 mr-1" /> : <Square className="w-4 h-4 mr-1" />}
+                                    Select
+                                </Button>
+                                <Button
                                     variant={viewMode === 'grid' ? 'default' : 'outline'}
                                     size="sm"
                                     onClick={() => setViewMode('grid')}
@@ -312,6 +434,25 @@ export default function SavedRecipesPage() {
                                     <List className="w-4 h-4" />
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* Advanced Filters */}
+                        <div className="mb-6">
+                            <AdvancedRecipeFilters
+                                filters={filters}
+                                onFiltersChange={setFilters}
+                                onClearFilters={() => setFilters({
+                                    cuisines: [],
+                                    cookingTime: {},
+                                    difficulty: [],
+                                    dietaryRestrictions: [],
+                                    rating: {},
+                                    sortBy: 'dateAdded',
+                                    sortOrder: 'desc'
+                                })}
+                                totalRecipes={activeTab === 'saved' ? savedRecipes.length : favoriteRecipes.length}
+                                filteredCount={filteredAndSortedRecipes.length}
+                            />
                         </div>
 
                         {/* Recipes */}
@@ -331,7 +472,7 @@ export default function SavedRecipesPage() {
                                     Try Again
                                 </Button>
                             </div>
-                        ) : filteredRecipes().length === 0 ? (
+                        ) : filteredAndSortedRecipes.length === 0 ? (
                             <div className="text-center py-12">
                                 {activeTab === 'saved' ? (
                                     <Bookmark className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -361,7 +502,7 @@ export default function SavedRecipesPage() {
                                 viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
                             )}>
                                 <AnimatePresence>
-                                    {filteredRecipes().map((recipe) => (
+                                    {filteredAndSortedRecipes.map((recipe: Recipe) => (
                                         <motion.div
                                             key={recipe.id}
                                             layout
