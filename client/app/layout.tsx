@@ -6,6 +6,7 @@ import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { MobileLayoutWrapper } from '@/components/layout/MobileLayoutWrapper';
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/ui/OfflineIndicator";
+import { performanceMonitor } from "@/lib/utils/performance-monitor";
 
 const inter = Inter({ subsets: ['latin'] });
 
