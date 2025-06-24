@@ -20,7 +20,7 @@ import { UserPreferences } from '@/lib/types/preferences';
 
 interface RecipeGenerationFormProps {
     onRecipeGenerated: (recipe: Recipe) => void;
-    onGenerationStart: () => void;
+    onGenerationStart: (formData?: any) => void;
     className?: string;
 }
 
@@ -143,7 +143,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
 
         setIsLoading(true);
         setError(null);
-        onGenerationStart();
+        onGenerationStart(formData);
 
         try {
             const request: RecipeGenerationRequest = {

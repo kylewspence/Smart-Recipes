@@ -4,26 +4,43 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import RecipeGenerationForm from '@/components/recipe/RecipeGenerationForm';
+import RecipeGenerationLoading from '@/components/recipe/RecipeGenerationLoading';
 import { Recipe } from '@/lib/types/recipe';
 import { Clock, Users, ChefHat, Bookmark, Share2, Star } from 'lucide-react';
 
 export default function RecipeGeneratorPage() {
     const [generatedRecipe, setGeneratedRecipe] = useState<Recipe | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [generationStartTime, setGenerationStartTime] = useState<Date | null>(null);
+    const [recipeType, setRecipeType] = useState<string>('recipe');
 
     const handleRecipeGenerated = (recipe: Recipe) => {
         setGeneratedRecipe(recipe);
         setIsGenerating(false);
+        setGenerationStartTime(null);
     };
 
-    const handleGenerationStart = () => {
+    const handleGenerationStart = (formData?: any) => {
         setIsGenerating(true);
         setGeneratedRecipe(null);
+        setGenerationStartTime(new Date());
+
+        // Set recipe type for loading display
+        if (formData?.mealType) {
+            setRecipeType(formData.mealType.toLowerCase());
+        }
+    };
+
+    const handleCancelGeneration = () => {
+        setIsGenerating(false);
+        setGenerationStartTime(null);
+        // TODO: Implement actual API cancellation if needed
     };
 
     const resetGenerator = () => {
         setGeneratedRecipe(null);
         setIsGenerating(false);
+        setGenerationStartTime(null);
     };
 
     return (
@@ -70,28 +87,12 @@ export default function RecipeGeneratorPage() {
                             >
                                 <AnimatePresence mode="wait">
                                     {isGenerating && (
-                                        <motion.div
+                                        <RecipeGenerationLoading
                                             key="generating"
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-8"
-                                        >
-                                            <div className="text-center">
-                                                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center">
-                                                    <ChefHat className="w-8 h-8 text-white animate-bounce" />
-                                                </div>
-                                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                                    Crafting Your Recipe
-                                                </h3>
-                                                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                                    Our AI chef is working on something delicious...
-                                                </p>
-                                                <div className="flex justify-center">
-                                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
+                                            onCancel={handleCancelGeneration}
+                                            estimatedTime={45}
+                                            recipeType={recipeType}
+                                        />
                                     )}
 
                                     {generatedRecipe && (
