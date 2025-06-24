@@ -1,9 +1,32 @@
+'use client';
+
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { MagicCard, ShimmerButton, BlurFade, SimpleAnimatedList } from "@/components/magicui";
+import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
+import { responsive } from "@/lib/utils/responsive";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+    const router = useRouter();
+
+    const handleSearch = (query: string, filters?: any) => {
+        if (query.trim()) {
+            const params = new URLSearchParams();
+            params.set('q', query);
+            if (filters) {
+                // Add filter parameters to URL
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+                        params.set(key, Array.isArray(value) ? value.join(',') : String(value));
+                    }
+                });
+            }
+            router.push(`/search?${params.toString()}`);
+        }
+    };
+
     return (
         <div className="flex min-h-screen flex-col">
             <Navbar />
@@ -11,10 +34,10 @@ export default function Home() {
             <main className="flex-1">
                 {/* Hero Section */}
                 <section className="relative bg-background py-24 sm:py-32">
-                    <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                    <div className={responsive.container.section}>
                         <div className="mx-auto max-w-2xl text-center">
                             <BlurFade delay={0.2}>
-                                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
+                                <h1 className={responsive.text.h1}>
                                     AI-Powered Recipes for Your Preferences
                                 </h1>
                             </BlurFade>
@@ -23,6 +46,21 @@ export default function Home() {
                                     Get personalized recipe suggestions based on your dietary needs, preferences, and available ingredients.
                                 </p>
                             </BlurFade>
+
+                            {/* Enhanced Search Bar */}
+                            <BlurFade delay={0.5}>
+                                <div className="mt-8 max-w-2xl mx-auto">
+                                    <EnhancedSearchBar
+                                        onSearch={handleSearch}
+                                        placeholder="Search for recipes, ingredients, or cuisines..."
+                                        className="w-full"
+                                        showFilters={true}
+                                        showTrending={true}
+                                        autoFocus={false}
+                                    />
+                                </div>
+                            </BlurFade>
+
                             <BlurFade delay={0.6}>
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
                                     <Link href="/register">
@@ -33,9 +71,9 @@ export default function Home() {
                                             Get Started
                                         </ShimmerButton>
                                     </Link>
-                                    <Link href="/about">
+                                    <Link href="/search">
                                         <Button variant="outline" size="lg">
-                                            Learn more
+                                            Browse Recipes
                                         </Button>
                                     </Link>
                                 </div>
@@ -44,20 +82,88 @@ export default function Home() {
                     </div>
                 </section>
 
+                {/* Quick Actions Section */}
+                <section className="bg-gradient-to-b from-background to-muted/30 py-16">
+                    <div className={responsive.container.section}>
+                        <BlurFade delay={0.3}>
+                            <div className="text-center mb-12">
+                                <h2 className={responsive.text.h2}>
+                                    What would you like to cook today?
+                                </h2>
+                                <p className="mt-4 text-lg text-muted-foreground">
+                                    Quick access to popular recipe categories and features
+                                </p>
+                            </div>
+                        </BlurFade>
+
+                        <div className={responsive.grid.features}>
+                            <BlurFade delay={0.4}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#ef4444" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🍝</div>
+                                    <h3 className="text-lg font-semibold mb-2">Quick & Easy</h3>
+                                    <p className="text-sm text-muted-foreground">Ready in 30 minutes or less</p>
+                                </MagicCard>
+                            </BlurFade>
+
+                            <BlurFade delay={0.5}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#10b981" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🥗</div>
+                                    <h3 className="text-lg font-semibold mb-2">Healthy Options</h3>
+                                    <p className="text-sm text-muted-foreground">Nutritious and delicious meals</p>
+                                </MagicCard>
+                            </BlurFade>
+
+                            <BlurFade delay={0.6}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#8b5cf6" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🍰</div>
+                                    <h3 className="text-lg font-semibold mb-2">Desserts</h3>
+                                    <p className="text-sm text-muted-foreground">Sweet treats and baked goods</p>
+                                </MagicCard>
+                            </BlurFade>
+
+                            <BlurFade delay={0.7}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#f59e0b" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🌶️</div>
+                                    <h3 className="text-lg font-semibold mb-2">Spicy Food</h3>
+                                    <p className="text-sm text-muted-foreground">Heat up your taste buds</p>
+                                </MagicCard>
+                            </BlurFade>
+
+                            <BlurFade delay={0.8}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#3b82f6" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🍲</div>
+                                    <h3 className="text-lg font-semibold mb-2">Comfort Food</h3>
+                                    <p className="text-sm text-muted-foreground">Hearty and satisfying dishes</p>
+                                </MagicCard>
+                            </BlurFade>
+
+                            <BlurFade delay={0.9}>
+                                <MagicCard className="p-6 text-center cursor-pointer hover:scale-105 transition-transform" gradientColor="#06b6d4" gradientOpacity={0.1}>
+                                    <div className="text-4xl mb-4">🌍</div>
+                                    <h3 className="text-lg font-semibold mb-2">World Cuisine</h3>
+                                    <p className="text-sm text-muted-foreground">Explore global flavors</p>
+                                </MagicCard>
+                            </BlurFade>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Features Section */}
                 <section className="bg-muted/50 py-24">
-                    <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                    <div className={responsive.container.section}>
                         <div className="mx-auto max-w-2xl lg:text-center">
-                            <h2 className="text-base font-semibold leading-7 text-primary">Smart Cooking</h2>
-                            <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                                Everything you need for perfect meals
-                            </p>
-                            <p className="mt-6 text-lg leading-8 text-muted-foreground">
-                                Our AI-powered recipe engine learns your preferences, dietary restrictions, and favorite ingredients to create perfect meal suggestions every time.
-                            </p>
+                            <BlurFade delay={0.2}>
+                                <h2 className="text-base font-semibold leading-7 text-primary">Smart Cooking</h2>
+                                <p className={responsive.text.h2}>
+                                    Everything you need for perfect meals
+                                </p>
+                                <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                                    Our AI-powered recipe engine learns your preferences, dietary restrictions, and favorite ingredients to create perfect meal suggestions every time.
+                                </p>
+                            </BlurFade>
                         </div>
                         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-                            <SimpleAnimatedList className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-8 lg:max-w-none lg:grid-cols-3">
+                            <SimpleAnimatedList className={responsive.grid.features}>
                                 <MagicCard className="p-6" gradientColor="#f97316" gradientOpacity={0.1}>
                                     <div className="flex flex-col h-full">
                                         <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
@@ -81,11 +187,11 @@ export default function Home() {
                                                 <path d="M9 18h6" />
                                                 <path d="M10 22h4" />
                                             </svg>
-                                            Smart Suggestions
+                                            Advanced Search
                                         </dt>
                                         <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-muted-foreground">
                                             <p className="flex-auto">
-                                                Our AI learns what you like and adapts to your taste preferences over time.
+                                                Find recipes with powerful search and filtering by cuisine, time, difficulty, and more.
                                             </p>
                                         </dd>
                                     </div>
@@ -113,7 +219,7 @@ export default function Home() {
             </main>
 
             <footer className="border-t bg-background py-10">
-                <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                <div className={responsive.container.section}>
                     <p className="text-center text-sm text-muted-foreground">
                         &copy; {new Date().getFullYear()} Smart Recipes. All rights reserved.
                     </p>
