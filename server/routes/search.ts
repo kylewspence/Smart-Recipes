@@ -9,17 +9,17 @@ const router = express.Router();
 const unifiedSearchSchema = z.object({
     query: z.string().min(1).max(200),
     type: z.enum(['all', 'recipes', 'ingredients', 'users']).default('all'),
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().min(0).default(0),
-    fuzzy: z.boolean().default(false), // Enable fuzzy/typo-tolerant search
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0),
+    fuzzy: z.coerce.boolean().default(false), // Enable fuzzy/typo-tolerant search
     filters: z.object({
         cuisine: z.string().optional(),
         difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
-        maxCookingTime: z.number().int().positive().optional(),
+        maxCookingTime: z.coerce.number().int().positive().optional(),
         spiceLevel: z.enum(['mild', 'medium', 'hot']).optional(),
         category: z.string().optional(),
-        minRating: z.number().min(1).max(5).optional(),
-        isGenerated: z.boolean().optional(),
+        minRating: z.coerce.number().min(1).max(5).optional(),
+        isGenerated: z.coerce.boolean().optional(),
         dateRange: z.object({
             start: z.string().optional(),
             end: z.string().optional()
@@ -30,32 +30,32 @@ const unifiedSearchSchema = z.object({
 // Enhanced advanced recipe search schema
 const advancedRecipeSearchSchema = z.object({
     query: z.string().optional(),
-    fuzzy: z.boolean().default(false),
+    fuzzy: z.coerce.boolean().default(false),
     includeIngredients: z.array(z.string()).optional(),
     excludeIngredients: z.array(z.string()).optional(),
     cuisine: z.array(z.string()).optional(),
     difficulty: z.array(z.enum(['easy', 'medium', 'hard'])).optional(),
-    maxCookingTime: z.number().int().positive().optional(),
-    minCookingTime: z.number().int().positive().optional(),
+    maxCookingTime: z.coerce.number().int().positive().optional(),
+    minCookingTime: z.coerce.number().int().positive().optional(),
     spiceLevel: z.array(z.enum(['mild', 'medium', 'hot'])).optional(),
     tags: z.array(z.string()).optional(),
-    minRating: z.number().min(1).max(5).optional(),
-    maxRating: z.number().min(1).max(5).optional(),
+    minRating: z.coerce.number().min(1).max(5).optional(),
+    maxRating: z.coerce.number().min(1).max(5).optional(),
     servings: z.object({
-        min: z.number().int().positive().optional(),
-        max: z.number().int().positive().optional()
+        min: z.coerce.number().int().positive().optional(),
+        max: z.coerce.number().int().positive().optional()
     }).optional(),
-    isGenerated: z.boolean().optional(),
-    isFavorite: z.boolean().optional(),
-    userId: z.number().int().positive().optional(),
+    isGenerated: z.coerce.boolean().optional(),
+    isFavorite: z.coerce.boolean().optional(),
+    userId: z.coerce.number().int().positive().optional(),
     dateRange: z.object({
         start: z.string().optional(),
         end: z.string().optional()
     }).optional(),
     sortBy: z.enum(['relevance', 'rating', 'cookingTime', 'prepTime', 'recent', 'popular']).default('relevance'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().min(0).default(0)
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0)
 });
 
 // Helper function to log search analytics

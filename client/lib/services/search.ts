@@ -76,7 +76,7 @@ export interface UnifiedSearchResult {
     };
 }
 
-class SearchService {
+export class SearchService {
     private cache = new Map<string, { data: any; timestamp: number }>();
     private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -361,6 +361,70 @@ class SearchService {
             }
         }
     }
+
+    /**
+     * Advanced recipe search with comprehensive filtering - matches search page interface
+     */
+    async searchRecipesAdvanced(searchParams: any): Promise<{
+        recipes: Recipe[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+        hasMore: boolean;
+    }> {
+        try {
+            // Convert the search page params to our internal format
+            const internalParams: SearchParams = {
+                query: searchParams.query,
+                fuzzy: searchParams.fuzzy,
+                includeIngredients: searchParams.includeIngredients,
+                excludeIngredients: searchParams.excludeIngredients,
+                sortBy: searchParams.sortBy,
+                sortOrder: searchParams.sortOrder,
+                limit: searchParams.limit || 12,
+                offset: ((searchParams.page || 1) - 1) * (searchParams.limit || 12),
+                filters: {
+                    cuisine: searchParams.cuisine,
+                    difficulty: searchParams.difficulty,
+                    minCookingTime: searchParams.minCookingTime,
+                    maxCookingTime: searchParams.maxCookingTime,
+                    spiceLevel: searchParams.spiceLevel,
+                    tags: searchParams.tags,
+                    minRating: searchParams.minRating,
+                    isGenerated: searchParams.isGenerated,
+                    isFavorite: searchParams.isFavorite,
+                }
+            };
+
+            const result = await this.searchRecipes(internalParams);
+
+            // Convert to the format expected by the search page
+            const page = searchParams.page || 1;
+            const limit = searchParams.limit || 12;
+            const total = result.pagination.total;
+            const totalPages = Math.ceil(total / limit);
+
+            return {
+                recipes: result.recipes,
+                total,
+                page,
+                limit,
+                totalPages,
+                hasMore: page < totalPages
+            };
+        } catch (error) {
+            console.error('Search failed:', error);
+            return {
+                recipes: [],
+                total: 0,
+                page: 1,
+                limit: 12,
+                totalPages: 0,
+                hasMore: false
+            };
+        }
+    }
 }
 
 // Export singleton instance
@@ -373,4 +437,4 @@ if (typeof window !== 'undefined') {
     }, 10 * 60 * 1000); // Every 10 minutes
 }
 
-export default searchService; 
+export default SearchService; 

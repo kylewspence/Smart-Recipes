@@ -8,6 +8,7 @@ import recipeRoutes from './routes/recipes';
 import preferencesRoutes from './routes/preferences';
 import ingredientsRoutes from './routes/ingredients';
 import searchRoutes from './routes/search';
+import recommendationsRoutes from './routes/recommendations';
 import migrationsRoutes from './routes/migrations';
 import databaseRoutes from './routes/database';
 import db from './db/db';
@@ -88,6 +89,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/ingredients', ingredientsRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
 
 // Future: AI recipe generation routes will use AI-specific rate limiting
 // app.use('/api/ai', rateLimiters.ai, slowDownLimiters.ai, aiRoutes);
@@ -109,6 +111,7 @@ app.use('/api/*', (req, res) => {
       'GET /api/preferences',
       'GET /api/ingredients',
       'GET /api/search',
+      'GET /api/recommendations',
       'GET /api/database/health',
       'GET /api/migrations/status'
     ]

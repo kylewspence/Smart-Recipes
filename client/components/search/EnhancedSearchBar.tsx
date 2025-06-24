@@ -208,8 +208,8 @@ export default function EnhancedSearchBar({
                         <button
                             onClick={() => setShowFilterPanel(!showFilterPanel)}
                             className={`p-2 mr-2 rounded-md transition-colors ${showFilterPanel || Object.values(filters).some(f => Array.isArray(f) ? f.length > 0 : f)
-                                    ? 'text-blue-600 bg-blue-50'
-                                    : 'text-gray-400 hover:text-gray-600'
+                                ? 'text-blue-600 bg-blue-50'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                         >
                             <Filter className="h-4 w-4" />
@@ -345,4 +345,6 @@ export default function EnhancedSearchBar({
             )}
         </div>
     );
-} 
+}
+
+export { EnhancedSearchBar }; 

@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { MagicCard, ShimmerButton, BlurFade, SimpleAnimatedList } from "@/components/magicui";
 import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
+import { RecommendationsSection } from "@/components/recommendations";
 import { responsive } from "@/lib/utils/responsive";
 import { useRouter } from "next/navigation";
 
@@ -79,6 +80,20 @@ export default function Home() {
                                 </div>
                             </BlurFade>
                         </div>
+                    </div>
+                </section>
+
+                {/* Recommendations Section */}
+                <section className="bg-background py-16">
+                    <div className={responsive.container.section}>
+                        <RecommendationsSection
+                            showQuick={true}
+                            showTrending={true}
+                            showSeasonal={true}
+                            showPersonalized={false}
+                            limit={6}
+                            className="max-w-7xl mx-auto"
+                        />
                     </div>
                 </section>
 
