@@ -60,6 +60,57 @@ export interface SavedRecipe extends Recipe {
     savedAt: string;
 }
 
+// Notes and Cooking History Types
+export type NoteType = 'personal' | 'modification' | 'tip' | 'review';
+
+export interface RecipeNote {
+    noteId: number;
+    recipeId: number;
+    userId: number;
+    note: string;
+    noteType: NoteType;
+    isPrivate: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CookingSessionData {
+    rating?: number;
+    notes?: string;
+    modifications?: any;
+    cookingTime?: number;
+    servings?: number;
+    success?: boolean;
+    wouldCookAgain?: boolean;
+}
+
+export interface CookingSession extends CookingSessionData {
+    historyId: number;
+    recipeId: number;
+    userId: number;
+    cookedAt: string;
+    recipeTitle?: string;
+    recipeDescription?: string;
+    cuisine?: string;
+    difficulty?: string;
+}
+
+export interface CookingStats {
+    stats: {
+        totalCookingSessions: number;
+        uniqueRecipesCooked: number;
+        averageRating: number;
+        successfulCooks: number;
+        wouldCookAgainCount: number;
+        averageCookingTime: number;
+    };
+    popularRecipes: Array<{
+        title: string;
+        recipeId: number;
+        cookCount: number;
+    }>;
+}
+
 export const recipeService = {
     // Generate a new recipe
     async generateRecipe(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
@@ -243,5 +294,56 @@ export const recipeService = {
             console.error('Failed to scale recipe:', error);
             throw error;
         }
+    },
+
+    // Recipe Notes
+    async getRecipeNotes(recipeId: number, userId: number): Promise<RecipeNote[]> {
+        const response = await recipeApi.get<{ success: boolean; data: RecipeNote[] }>(`/recipes/${recipeId}/notes/${userId}`);
+        return response.data.data;
+    },
+
+    async addRecipeNote(recipeId: number, note: string, noteType: NoteType = 'personal', isPrivate: boolean = true): Promise<RecipeNote> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        const response = await recipeApi.post<{ success: boolean; data: RecipeNote }>(`/recipes/${recipeId}/notes`, {
+            userId: user?.userId,
+            note,
+            noteType,
+            isPrivate
+        });
+        return response.data.data;
+    },
+
+    async deleteRecipeNote(recipeId: number, noteId: number): Promise<void> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        await recipeApi.delete(`/recipes/${recipeId}/notes/${noteId}`, {
+            data: { userId: user?.userId }
+        });
+    },
+
+    // Cooking History
+    async getCookingHistory(userId: number, recipeId?: number): Promise<CookingSession[]> {
+        const params = recipeId ? `?recipeId=${recipeId}` : '';
+        const response = await recipeApi.get<{ success: boolean; data: CookingSession[] }>(`/users/${userId}/cooking-history${params}`);
+        return response.data.data;
+    },
+
+    async recordCookingSession(recipeId: number, sessionData: CookingSessionData): Promise<CookingSession> {
+        const userData = localStorage.getItem('user_data');
+        const user = userData ? JSON.parse(userData) : null;
+
+        const response = await recipeApi.post<{ success: boolean; data: CookingSession }>(`/recipes/${recipeId}/cook`, {
+            userId: user?.userId,
+            ...sessionData
+        });
+        return response.data.data;
+    },
+
+    async getCookingStats(userId: number): Promise<CookingStats> {
+        const response = await recipeApi.get<{ success: boolean; data: CookingStats }>(`/users/${userId}/cooking-stats`);
+        return response.data.data;
     }
 };

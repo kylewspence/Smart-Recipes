@@ -6,6 +6,8 @@ import { Recipe, NutritionalInfo } from '@/lib/types/recipe';
 import { recipeService } from '@/lib/services/recipe';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import RecipeCustomizer from './RecipeCustomizer';
+import RecipeNotes from './RecipeNotes';
+import CookingHistory from './CookingHistory';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -522,6 +524,16 @@ export default function RecipeDisplay({
                             </motion.div>
                         ))}
                     </div>
+                </div>
+
+                {/* Recipe Notes */}
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <RecipeNotes recipeId={recipe.id} />
+                </div>
+
+                {/* Cooking History */}
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <CookingHistory recipeId={recipe.id} />
                 </div>
 
                 {/* Action Buttons */}

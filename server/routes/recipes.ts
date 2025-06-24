@@ -1774,4 +1774,305 @@ router.delete('/collections/:collectionId/recipes/:recipeId', async (req, res, n
     }
 });
 
+// ===== RECIPE NOTES =====
+
+/**
+ * Get notes for a recipe by a specific user
+ * GET /api/recipes/:recipeId/notes/:userId
+ */
+router.get('/:recipeId/notes/:userId', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const userId = parseInt(req.params.userId, 10);
+
+        if (isNaN(userId) || userId <= 0) {
+            throw new ClientError(400, 'Invalid user ID');
+        }
+
+        const notesResult = await db.query(
+            `SELECT * FROM "recipeNotes" 
+             WHERE "recipeId" = $1 AND "userId" = $2
+             ORDER BY "noteType", "createdAt" DESC`,
+            [recipeId, userId]
+        );
+
+        res.json({
+            success: true,
+            data: notesResult.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Add or update a note for a recipe
+ * POST /api/recipes/:recipeId/notes
+ */
+router.post('/:recipeId/notes', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const { userId, note, noteType = 'personal', isPrivate = true } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        if (!note || note.trim().length === 0) {
+            throw new ClientError(400, 'Note content is required');
+        }
+
+        const validNoteTypes = ['personal', 'modification', 'tip', 'review'];
+        if (!validNoteTypes.includes(noteType)) {
+            throw new ClientError(400, 'Invalid note type');
+        }
+
+        // Check if recipe exists
+        const recipeCheck = await db.query(
+            'SELECT 1 FROM "recipes" WHERE "recipeId" = $1',
+            [recipeId]
+        );
+
+        if (recipeCheck.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found');
+        }
+
+        // Check if note already exists for this user/recipe/type
+        const existingNote = await db.query(
+            'SELECT "noteId" FROM "recipeNotes" WHERE "recipeId" = $1 AND "userId" = $2 AND "noteType" = $3',
+            [recipeId, userId, noteType]
+        );
+
+        if (existingNote.rows.length > 0) {
+            // Update existing note
+            const result = await db.query(
+                `UPDATE "recipeNotes" 
+                 SET "note" = $1, "isPrivate" = $2, "updatedAt" = NOW()
+                 WHERE "recipeId" = $3 AND "userId" = $4 AND "noteType" = $5
+                 RETURNING *`,
+                [note.trim(), isPrivate, recipeId, userId, noteType]
+            );
+
+            res.json({
+                success: true,
+                data: result.rows[0],
+                message: 'Note updated successfully'
+            });
+        } else {
+            // Create new note
+            const result = await db.query(
+                `INSERT INTO "recipeNotes" ("recipeId", "userId", "note", "noteType", "isPrivate")
+                 VALUES ($1, $2, $3, $4, $5)
+                 RETURNING *`,
+                [recipeId, userId, note.trim(), noteType, isPrivate]
+            );
+
+            res.status(201).json({
+                success: true,
+                data: result.rows[0],
+                message: 'Note added successfully'
+            });
+        }
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Delete a note
+ * DELETE /api/recipes/:recipeId/notes/:noteId
+ */
+router.delete('/:recipeId/notes/:noteId', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const noteId = parseInt(req.params.noteId, 10);
+        const { userId } = req.body;
+
+        if (isNaN(noteId) || noteId <= 0) {
+            throw new ClientError(400, 'Invalid note ID');
+        }
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        const result = await db.query(
+            'DELETE FROM "recipeNotes" WHERE "noteId" = $1 AND "recipeId" = $2 AND "userId" = $3 RETURNING *',
+            [noteId, recipeId, userId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new ClientError(404, 'Note not found or does not belong to user');
+        }
+
+        res.json({
+            success: true,
+            message: 'Note deleted successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// ===== COOKING HISTORY =====
+
+/**
+ * Get cooking history for a user
+ * GET /api/users/:userId/cooking-history
+ */
+router.get('/users/:userId/cooking-history', async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.userId, 10);
+
+        if (isNaN(userId) || userId <= 0) {
+            throw new ClientError(400, 'Invalid user ID');
+        }
+
+        const { limit = 20, offset = 0, recipeId } = req.query;
+
+        let query = `
+            SELECT ch.*, r."title" as "recipeTitle", r."description" as "recipeDescription",
+                   r."cuisine", r."difficulty"
+            FROM "cookingHistory" ch
+            JOIN "recipes" r ON ch."recipeId" = r."recipeId"
+            WHERE ch."userId" = $1
+        `;
+
+        const queryParams = [userId];
+        let paramIndex = 2;
+
+        if (recipeId) {
+            query += ` AND ch."recipeId" = $${paramIndex}`;
+            queryParams.push(parseInt(recipeId as string, 10));
+            paramIndex++;
+        }
+
+        query += ` ORDER BY ch."cookedAt" DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        queryParams.push(parseInt(limit as string, 10), parseInt(offset as string, 10));
+
+        const historyResult = await db.query(query, queryParams);
+
+        res.json({
+            success: true,
+            data: historyResult.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Record cooking session
+ * POST /api/recipes/:recipeId/cook
+ */
+router.post('/:recipeId/cook', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const {
+            userId,
+            rating,
+            notes,
+            modifications,
+            cookingTime,
+            servings,
+            success = true,
+            wouldCookAgain
+        } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if recipe exists
+        const recipeCheck = await db.query(
+            'SELECT 1 FROM "recipes" WHERE "recipeId" = $1',
+            [recipeId]
+        );
+
+        if (recipeCheck.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found');
+        }
+
+        // Validate rating if provided
+        if (rating && (rating < 1 || rating > 5)) {
+            throw new ClientError(400, 'Rating must be between 1 and 5');
+        }
+
+        const result = await db.query(
+            `INSERT INTO "cookingHistory" 
+             ("recipeId", "userId", "rating", "notes", "modifications", "cookingTime", "servings", "success", "wouldCookAgain")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING *`,
+            [
+                recipeId,
+                userId,
+                rating || null,
+                notes || null,
+                modifications ? JSON.stringify(modifications) : null,
+                cookingTime || null,
+                servings || null,
+                success,
+                wouldCookAgain || null
+            ]
+        );
+
+        res.status(201).json({
+            success: true,
+            data: result.rows[0],
+            message: 'Cooking session recorded successfully'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Get cooking statistics for a user
+ * GET /api/users/:userId/cooking-stats
+ */
+router.get('/users/:userId/cooking-stats', async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.userId, 10);
+
+        if (isNaN(userId) || userId <= 0) {
+            throw new ClientError(400, 'Invalid user ID');
+        }
+
+        const statsResult = await db.query(
+            `SELECT 
+                COUNT(*) as "totalCookingSessions",
+                COUNT(DISTINCT "recipeId") as "uniqueRecipesCooked",
+                ROUND(AVG("rating"), 2) as "averageRating",
+                COUNT(CASE WHEN "success" = true THEN 1 END) as "successfulCooks",
+                COUNT(CASE WHEN "wouldCookAgain" = true THEN 1 END) as "wouldCookAgainCount",
+                ROUND(AVG("cookingTime"), 0) as "averageCookingTime"
+             FROM "cookingHistory"
+             WHERE "userId" = $1`,
+            [userId]
+        );
+
+        // Get most cooked recipes
+        const popularRecipesResult = await db.query(
+            `SELECT r."title", r."recipeId", COUNT(*) as "cookCount"
+             FROM "cookingHistory" ch
+             JOIN "recipes" r ON ch."recipeId" = r."recipeId"
+             WHERE ch."userId" = $1
+             GROUP BY r."recipeId", r."title"
+             ORDER BY "cookCount" DESC
+             LIMIT 5`,
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                stats: statsResult.rows[0],
+                popularRecipes: popularRecipesResult.rows
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export default router;
