@@ -694,37 +694,40 @@ async function searchRecipesEnhanced(params: any) {
     let whereConditions = ['1=1'];
     let queryParams = [];
     let paramIndex = 1;
+    let relevanceScore = '1 as relevance_score'; // Default relevance score
 
-    if (params.fuzzy) {
-        whereConditions.push(`(
-            similarity(r."title", $${paramIndex}) > 0.3 OR
-            similarity(r."description", $${paramIndex}) > 0.2 OR
-            r."searchVector" @@ plainto_tsquery('english', $${paramIndex})
-        )`);
-        queryParams.push(params.query);
-        paramIndex++;
-    } else {
-        whereConditions.push(`(
-            r."searchVector" @@ plainto_tsquery('english', $${paramIndex}) OR
-            r."title" ILIKE $${paramIndex + 1} OR 
-            r."description" ILIKE $${paramIndex + 1}
-        )`);
-        queryParams.push(params.query, `%${params.query}%`);
-        paramIndex += 2;
+    // Only add search conditions if query is provided
+    if (params.query && params.query.trim()) {
+        if (params.fuzzy) {
+            whereConditions.push(`(
+                similarity(r."title", $${paramIndex}) > 0.3 OR
+                similarity(r."description", $${paramIndex}) > 0.2 OR
+                r."searchVector" @@ plainto_tsquery('english', $${paramIndex})
+            )`);
+            relevanceScore = `GREATEST(
+                similarity(r."title", $${paramIndex}),
+                similarity(r."description", $${paramIndex}),
+                ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex}))
+              ) as relevance_score`;
+            queryParams.push(params.query);
+            paramIndex++;
+        } else {
+            whereConditions.push(`(
+                r."searchVector" @@ plainto_tsquery('english', $${paramIndex}) OR
+                r."title" ILIKE $${paramIndex + 1} OR 
+                r."description" ILIKE $${paramIndex + 1}
+            )`);
+            relevanceScore = `ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex})) as relevance_score`;
+            queryParams.push(params.query, `%${params.query}%`);
+            paramIndex += 2;
+        }
     }
 
     const query = `
         SELECT r."recipeId", r."title", r."description", r."cuisine", r."difficulty",
                'recipe' as result_type,
                COALESCE(AVG(rr."rating"), 0) as avg_rating,
-               ${params.fuzzy ?
-            `GREATEST(
-                    similarity(r."title", $1),
-                    similarity(r."description", $1),
-                    ts_rank(r."searchVector", plainto_tsquery('english', $1))
-                  )` :
-            `ts_rank(r."searchVector", plainto_tsquery('english', $1))`
-        } as relevance_score
+               ${relevanceScore}
         FROM "recipes" r
         LEFT JOIN "recipeRatings" rr ON r."recipeId" = rr."recipeId"
         WHERE ${whereConditions.join(' AND ')}
@@ -740,31 +743,34 @@ async function searchRecipesEnhanced(params: any) {
 }
 
 async function searchIngredientsEnhanced(params: any) {
-    let whereConditions = [];
+    let whereConditions = ['1=1'];
     let queryParams = [];
     let paramIndex = 1;
+    let relevanceScore = '1 as relevance_score'; // Default relevance score
 
-    if (params.fuzzy) {
-        whereConditions.push(`similarity(i."name", $${paramIndex}) > 0.4`);
-        queryParams.push(params.query);
-        paramIndex++;
-    } else {
-        whereConditions.push(`(
-            to_tsvector('english', i."name") @@ plainto_tsquery('english', $${paramIndex}) OR
-            i."name" ILIKE $${paramIndex + 1}
-        )`);
-        queryParams.push(params.query, `%${params.query}%`);
-        paramIndex += 2;
+    // Only add search conditions if query is provided
+    if (params.query && params.query.trim()) {
+        if (params.fuzzy) {
+            whereConditions.push(`similarity(i."name", $${paramIndex}) > 0.4`);
+            relevanceScore = `similarity(i."name", $${paramIndex}) as relevance_score`;
+            queryParams.push(params.query);
+            paramIndex++;
+        } else {
+            whereConditions.push(`(
+                to_tsvector('english', i."name") @@ plainto_tsquery('english', $${paramIndex}) OR
+                i."name" ILIKE $${paramIndex + 1}
+            )`);
+            relevanceScore = `ts_rank(to_tsvector('english', i."name"), plainto_tsquery('english', $${paramIndex})) as relevance_score`;
+            queryParams.push(params.query, `%${params.query}%`);
+            paramIndex += 2;
+        }
     }
 
     const query = `
         SELECT i."ingredientId", i."name", i."category",
                'ingredient' as result_type,
                COUNT(DISTINCT ri."recipeId") as usage_count,
-               ${params.fuzzy ?
-            `similarity(i."name", $1)` :
-            `ts_rank(to_tsvector('english', i."name"), plainto_tsquery('english', $1))`
-        } as relevance_score
+               ${relevanceScore}
         FROM "ingredients" i
         LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
         WHERE ${whereConditions.join(' AND ')}
@@ -780,23 +786,32 @@ async function searchIngredientsEnhanced(params: any) {
 }
 
 async function searchUsers(params: any) {
+    let whereCondition = '1=1';
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Only add search condition if query is provided
+    if (params.query && params.query.trim()) {
+        whereCondition = `u."name" ILIKE $${paramIndex}`;
+        queryParams.push(`%${params.query}%`);
+        paramIndex++;
+    }
+
     const query = `
         SELECT u."userId", u."name", u."email",
                'user' as result_type,
                COUNT(DISTINCT r."recipeId") as recipe_count
         FROM "users" u
         LEFT JOIN "recipes" r ON u."userId" = r."userId"
-        WHERE u."name" ILIKE $1
+        WHERE ${whereCondition}
         GROUP BY u."userId", u."name", u."email"
         ORDER BY recipe_count DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    const result = await db.query(query, [
-        `%${params.query}%`,
-        Math.min(params.limit, 5),
-        params.offset
-    ]);
+    queryParams.push(Math.min(params.limit, 5), params.offset);
+
+    const result = await db.query(query, queryParams);
 
     // Remove sensitive information
     return result.rows.map(user => ({
