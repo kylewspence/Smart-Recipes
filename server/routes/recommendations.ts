@@ -1,0 +1,1221 @@
+import * as express from 'express';
+import { z } from 'zod';
+import { pool } from '../db/db';
+import { ClientError } from '../utils/errors';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const router = express.Router();
+
+// Recommendation request schemas
+const personalizedRecommendationsSchema = z.object({
+    userId: z.number().int().positive().optional(),
+    limit: z.number().int().positive().max(50).default(10),
+    includeExplanation: z.boolean().default(false),
+    preferences: z.object({
+        cuisines: z.array(z.string()).optional(),
+        dietaryRestrictions: z.array(z.string()).optional(),
+        allergies: z.array(z.string()).optional(),
+        dislikes: z.array(z.string()).optional(),
+        spiceLevel: z.enum(['mild', 'medium', 'hot']).optional(),
+        maxCookingTime: z.number().int().positive().optional(),
+        difficulty: z.array(z.enum(['easy', 'medium', 'hard'])).optional(),
+        mealType: z.array(z.string()).optional()
+    }).optional()
+});
+
+const similarRecipesSchema = z.object({
+    limit: z.string().optional().transform(val => val ? parseInt(val) : 6).pipe(z.number().int().positive().max(20)),
+    includeExplanation: z.string().optional().transform(val => val === 'true').pipe(z.boolean())
+});
+
+const trendingRecommendationsSchema = z.object({
+    period: z.enum(['day', 'week', 'month']).default('week'),
+    limit: z.string().optional().transform(val => val ? parseInt(val) : 10).pipe(z.number().int().positive().max(30)),
+    category: z.enum(['all', 'seasonal', 'popular', 'new']).default('all')
+});
+
+const ingredientBasedRecommendationsSchema = z.object({
+    ingredients: z.array(z.string()).min(1).max(20),
+    excludeIngredients: z.array(z.string()).optional(),
+    limit: z.number().int().positive().max(20).default(10),
+    userId: z.number().int().positive().optional()
+});
+
+/**
+ * Get quick recommendations (no auth required)
+ * GET /api/recommendations/quick
+ */
+router.get('/quick', async (req, res, next) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit as string) || 6, 20);
+
+        // Get a mix of popular and recent recipes for quick recommendations
+        const query = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings,
+                COALESCE(AVG(rr.rating), 0) as avg_rating,
+                COUNT(sr."userId") as save_count
+            FROM recipes r
+            LEFT JOIN "savedRecipes" sr ON r."recipeId" = sr."recipeId"
+            LEFT JOIN "recipeRatings" rr ON r."recipeId" = rr."recipeId"
+            GROUP BY r."recipeId", r.title, r.description, r.cuisine, r.difficulty, r."cookingTime", r.servings
+            ORDER BY (COUNT(sr."userId") * 0.6 + COALESCE(AVG(rr.rating), 0) * 0.4) DESC, r."createdAt" DESC
+            LIMIT $1
+        `;
+
+        const result = await pool.query(query, [limit]);
+
+        res.json({
+            success: true,
+            data: {
+                recommendations: result.rows,
+                metadata: {
+                    strategy: 'popular-recent',
+                    limit,
+                    count: result.rows.length,
+                    requiresAuth: false
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Quick recommendations error:', err);
+        next(err);
+    }
+});
+
+/**
+ * Get trending recipes based on recent activity
+ * GET /api/recommendations/trending
+ */
+router.get('/trending', async (req, res, next) => {
+    try {
+        const period = req.query.period as string || 'week';
+        const limit = Math.min(parseInt(req.query.limit as string) || 10, 30);
+
+        // Simple trending algorithm based on recent recipes
+        let daysBack = 7; // default to week
+        if (period === 'day') daysBack = 1;
+        else if (period === 'month') daysBack = 30;
+
+        const query = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings,
+                r."createdAt",
+                COUNT(s."userId") as "favoriteCount"
+            FROM recipes r
+            LEFT JOIN "savedRecipes" s ON r."recipeId" = s."recipeId"
+            WHERE r."createdAt" >= NOW() - INTERVAL '${daysBack} days'
+            GROUP BY r."recipeId"
+            ORDER BY COUNT(s."userId") DESC, r."createdAt" DESC
+            LIMIT $1
+        `;
+
+        const result = await pool.query(query, [limit]);
+
+        res.json({
+            success: true,
+            data: {
+                recipes: result.rows,
+                metadata: {
+                    period,
+                    limit,
+                    daysBack,
+                    count: result.rows.length
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Trending recommendations error:', err);
+        next(err);
+    }
+});
+
+/**
+ * Get personalized recommendations (simplified)
+ * POST /api/recommendations/personalized
+ */
+router.post('/personalized', async (req, res, next) => {
+    try {
+        const { userId, limit = 10 } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'User ID required'
+            });
+        }
+
+        // Get user's favorite cuisines
+        const userFavoritesQuery = `
+            SELECT r.cuisine, COUNT(*) as count
+            FROM "savedRecipes" s
+            JOIN recipes r ON s."recipeId" = r."recipeId"
+            WHERE s."userId" = $1
+            GROUP BY r.cuisine
+            ORDER BY count DESC
+            LIMIT 3
+        `;
+
+        const favCuisines = await pool.query(userFavoritesQuery, [userId]);
+        const cuisines = favCuisines.rows.map(row => row.cuisine);
+
+        // Get recommendations based on favorite cuisines
+        let recommendationsQuery;
+        let queryParams;
+
+        if (cuisines.length > 0) {
+            recommendationsQuery = `
+                SELECT 
+                    r."recipeId",
+                    r.title,
+                    r.description,
+                    r.cuisine,
+                    r.difficulty,
+                    r."cookingTime",
+                    r.servings,
+                    CASE WHEN s."userId" IS NOT NULL THEN true ELSE false END as "isFavorited"
+                FROM recipes r
+                LEFT JOIN "savedRecipes" s ON r."recipeId" = s."recipeId" AND s."userId" = $1
+                WHERE r.cuisine = ANY($2)
+                AND r."recipeId" NOT IN (
+                    SELECT "recipeId" FROM "savedRecipes" WHERE "userId" = $1
+                )
+                ORDER BY r."createdAt" DESC, RANDOM()
+                LIMIT $3
+            `;
+            queryParams = [userId, cuisines, limit];
+        } else {
+            // Fallback to popular recipes
+            recommendationsQuery = `
+                SELECT 
+                    r."recipeId",
+                    r.title,
+                    r.description,
+                    r.cuisine,
+                    r.difficulty,
+                    r."cookingTime",
+                    r.servings,
+                    false as "isFavorited"
+                FROM recipes r
+                WHERE r."recipeId" NOT IN (
+                    SELECT "recipeId" FROM "savedRecipes" WHERE "userId" = $1
+                )
+                ORDER BY r."createdAt" DESC, RANDOM()
+                LIMIT $2
+            `;
+            queryParams = [userId, limit];
+        }
+
+        const result = await pool.query(recommendationsQuery, queryParams);
+
+        res.json({
+            success: true,
+            data: {
+                recommendations: result.rows,
+                userProfile: {
+                    favoriteCuisines: cuisines,
+                    totalFavorites: favCuisines.rows.reduce((sum, row) => sum + parseInt(row.count), 0)
+                },
+                metadata: {
+                    strategy: cuisines.length > 0 ? 'cuisine-based' : 'popular',
+                    limit,
+                    count: result.rows.length
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Personalized recommendations error:', err);
+        next(err);
+    }
+});
+
+/**
+ * Get similar recipes based on a specific recipe
+ * GET /api/recommendations/similar/:recipeId
+ */
+router.get('/similar/:recipeId', async (req, res, next) => {
+    try {
+        const recipeId = parseInt(req.params.recipeId);
+        const limit = Math.min(parseInt(req.query.limit as string) || 6, 20);
+
+        if (isNaN(recipeId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid recipe ID'
+            });
+        }
+
+        // Get the base recipe
+        const baseRecipeQuery = `
+            SELECT "recipeId", title, cuisine, difficulty, "cookingTime"
+            FROM recipes 
+            WHERE "recipeId" = $1
+        `;
+        const baseResult = await pool.query(baseRecipeQuery, [recipeId]);
+
+        if (baseResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Recipe not found'
+            });
+        }
+
+        const baseRecipe = baseResult.rows[0];
+
+        // Find similar recipes by cuisine and difficulty
+        const similarQuery = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings,
+                CASE 
+                    WHEN r.cuisine = $2 AND r.difficulty = $3 THEN 3
+                    WHEN r.cuisine = $2 THEN 2
+                    WHEN r.difficulty = $3 THEN 1
+                    ELSE 0
+                END as similarity_score
+            FROM recipes r
+            WHERE r."recipeId" != $1
+            AND (r.cuisine = $2 OR r.difficulty = $3)
+            ORDER BY similarity_score DESC, r."createdAt" DESC, RANDOM()
+            LIMIT $4
+        `;
+
+        const result = await pool.query(similarQuery, [
+            recipeId,
+            baseRecipe.cuisine,
+            baseRecipe.difficulty,
+            limit
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                baseRecipe: {
+                    id: baseRecipe.recipeId,
+                    title: baseRecipe.title,
+                    cuisine: baseRecipe.cuisine,
+                    difficulty: baseRecipe.difficulty,
+                    cookingTime: baseRecipe.cookingTime
+                },
+                similarRecipes: result.rows,
+                metadata: {
+                    strategy: 'cuisine-difficulty-based',
+                    limit,
+                    count: result.rows.length
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Similar recipes error:', err);
+        next(err);
+    }
+});
+
+/**
+ * Get ingredient-based recommendations
+ * POST /api/recommendations/ingredients
+ */
+router.post('/ingredients', async (req, res, next) => {
+    try {
+        const { ingredients, excludeIngredients = [], limit = 10 } = req.body;
+
+        if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Ingredients array required'
+            });
+        }
+
+        // Simple ingredient matching - find recipes that contain any of the specified ingredients
+        const ingredientPattern = ingredients.join('|');
+        const excludePattern = excludeIngredients.length > 0 ? excludeIngredients.join('|') : null;
+
+        let query = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings,
+                COUNT(i.name) as ingredient_matches
+            FROM recipes r
+            JOIN "recipeIngredients" ri ON r."recipeId" = ri."recipeId"
+            JOIN ingredients i ON ri."ingredientId" = i."ingredientId"
+            WHERE i.name ~* $1
+        `;
+
+        const queryParams: any[] = [ingredientPattern];
+
+        if (excludePattern) {
+            query += ` AND NOT EXISTS (
+                SELECT 1 FROM "recipeIngredients" ri2 
+                JOIN ingredients i2 ON ri2."ingredientId" = i2."ingredientId"
+                WHERE ri2."recipeId" = r."recipeId" 
+                AND i2.name ~* $2
+            )`;
+            queryParams.push(excludePattern);
+        }
+
+        query += `
+            GROUP BY r."recipeId", r.title, r.description, r.cuisine, r.difficulty, r."cookingTime", r.servings
+            ORDER BY COUNT(i.name) DESC, r."createdAt" DESC
+            LIMIT $${queryParams.length + 1}
+        `;
+        queryParams.push(limit);
+
+        const result = await pool.query(query, queryParams);
+
+        res.json({
+            success: true,
+            data: {
+                recipes: result.rows,
+                searchCriteria: {
+                    ingredients,
+                    excludeIngredients,
+                    limit
+                },
+                metadata: {
+                    strategy: 'ingredient-matching',
+                    count: result.rows.length
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Ingredient recommendations error:', err);
+        next(err);
+    }
+});
+
+/**
+ * Get surprise/discovery recommendations
+ * GET /api/recommendations/surprise
+ */
+router.get('/surprise', async (req, res, next) => {
+    try {
+        const rawUserId = (req as any).user?.id;
+        const limit = Math.min(parseInt(req.query.limit as string) || 5, 10);
+
+        let surpriseRecipes;
+
+        if (rawUserId) {
+            const userId = Number(rawUserId);
+            if (!isNaN(userId)) {
+                // Personalized surprise recommendations
+                const userProfile = await getUserProfile(userId);
+                surpriseRecipes = await getPersonalizedSurpriseRecommendations(userProfile, limit);
+            } else {
+                // General surprise recommendations
+                surpriseRecipes = await getGeneralSurpriseRecommendations(limit);
+            }
+        } else {
+            // General surprise recommendations
+            surpriseRecipes = await getGeneralSurpriseRecommendations(limit);
+        }
+
+        res.json({
+            success: true,
+            data: {
+                surpriseRecipes,
+                metadata: {
+                    personalized: !!(rawUserId && !isNaN(Number(rawUserId))),
+                    algorithm: 'exploration-discovery',
+                    generatedAt: new Date().toISOString()
+                }
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Helper functions
+
+async function getUserProfile(userId: number) {
+    const profileQuery = `
+        SELECT 
+            u."userId",
+            u."email",
+            p."cuisines",
+            p."dietaryRestrictions",
+            p."allergies",
+            p."dislikes",
+            p."spiceLevel",
+            p."maxCookingTime",
+            COUNT(DISTINCT uf."recipeId") as favorite_count,
+            AVG(r."cookingTime") as avg_cooking_time,
+            array_agg(DISTINCT r."cuisine") FILTER (WHERE r."cuisine" IS NOT NULL) as top_cuisines
+        FROM "users" u
+        LEFT JOIN "preferences" p ON u."userId" = p."userId"
+        LEFT JOIN "userFavorites" uf ON u."userId" = uf."userId"
+        LEFT JOIN "recipes" r ON uf."recipeId" = r."recipeId"
+        WHERE u."userId" = $1
+        GROUP BY u."userId", u."email", p."cuisines", p."dietaryRestrictions", 
+                 p."allergies", p."dislikes", p."spiceLevel", p."maxCookingTime"
+    `;
+
+    const result = await pool.query(profileQuery, [userId]);
+    return result.rows[0] || { userId, preferences: {} };
+}
+
+async function getUserCookingHistory(userId: number) {
+    const historyQuery = `
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            uf."createdAt" as interaction_date,
+            'favorite' as interaction_type
+        FROM "userFavorites" uf
+        JOIN "recipes" r ON uf."recipeId" = r."recipeId"
+        WHERE uf."userId" = $1
+        ORDER BY uf."createdAt" DESC
+        LIMIT 50
+    `;
+
+    const result = await pool.query(historyQuery, [userId]);
+    return result.rows;
+}
+
+async function getUserFavorites(userId: number) {
+    const savedRecipesQuery = `
+        SELECT r."recipeId", r."title", r."cuisine", r."difficulty"
+        FROM "userFavorites" uf
+        JOIN "recipes" r ON uf."recipeId" = r."recipeId"
+        WHERE uf."userId" = $1
+    `;
+
+    const result = await pool.query(savedRecipesQuery, [userId]);
+    return result.rows;
+}
+
+async function getCollaborativeRecommendations(userId: number, limit: number) {
+    // Find users with similar taste (collaborative filtering)
+    const similarUsersQuery = `
+        WITH user_savedRecipes AS (
+            SELECT "recipeId" FROM "userFavorites" WHERE "userId" = $1
+        ),
+        similar_users AS (
+            SELECT 
+                uf."userId",
+                COUNT(*) as common_savedRecipes,
+                COUNT(DISTINCT uf."recipeId") as total_savedRecipes
+            FROM "userFavorites" uf
+            WHERE uf."recipeId" IN (SELECT "recipeId" FROM user_savedRecipes)
+            AND uf."userId" != $1
+            GROUP BY uf."userId"
+            HAVING COUNT(*) >= 2
+            ORDER BY (COUNT(*)::float / COUNT(DISTINCT uf."recipeId")) DESC
+            LIMIT 10
+        )
+        SELECT DISTINCT
+            r."recipeId",
+            r."title",
+            r."description",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            AVG(r."rating") as avg_rating,
+            COUNT(uf."userId") as recommendation_strength
+        FROM similar_users su
+        JOIN "userFavorites" uf ON su."userId" = uf."userId"
+        JOIN "recipes" r ON uf."recipeId" = r."recipeId"
+        WHERE r."recipeId" NOT IN (SELECT "recipeId" FROM user_savedRecipes)
+        GROUP BY r."recipeId", r."title", r."description", r."cuisine", r."difficulty", r."cookingTime"
+        ORDER BY recommendation_strength DESC, avg_rating DESC
+        LIMIT $2
+    `;
+
+    const result = await pool.query(similarUsersQuery, [userId, limit]);
+    return result.rows.map(row => ({ ...row, strategy: 'collaborative' }));
+}
+
+async function getContentBasedRecommendations(preferences: any, userHistory: any[], limit: number) {
+    const conditions = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (preferences.cuisines?.length) {
+        conditions.push(`r."cuisine" = ANY($${paramIndex})`);
+        params.push(preferences.cuisines);
+        paramIndex++;
+    }
+
+    if (preferences.difficulty?.length) {
+        conditions.push(`r."difficulty" = ANY($${paramIndex})`);
+        params.push(preferences.difficulty);
+        paramIndex++;
+    }
+
+    if (preferences.maxCookingTime) {
+        conditions.push(`r."cookingTime" <= $${paramIndex}`);
+        params.push(preferences.maxCookingTime);
+        paramIndex++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const contentQuery = `
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."description",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            CASE 
+                WHEN r."cuisine" = ANY($${paramIndex}) THEN 2
+                ELSE 1
+            END as preference_score
+        FROM "recipes" r
+        ${whereClause}
+        ORDER BY preference_score DESC, r."rating" DESC
+        LIMIT $${paramIndex + 1}
+    `;
+
+    params.push(preferences.cuisines || []);
+    params.push(limit);
+
+    const result = await pool.query(contentQuery, params);
+    return result.rows.map(row => ({ ...row, strategy: 'content-based' }));
+}
+
+async function getAIEnhancedRecommendations(
+    userProfile: any,
+    userHistory: any[],
+    userFavorites: any[],
+    preferences: any,
+    limit: number,
+    includeExplanation: boolean
+) {
+    try {
+        // Prepare context for AI
+        const userContext = {
+            favoriteRecipes: userFavorites.map(f => f.title).slice(0, 10),
+            topCuisines: userProfile.topCuisines || [],
+            preferences: preferences,
+            recentHistory: userHistory.slice(0, 5).map(h => h.title)
+        };
+
+        // Get available recipes for AI to choose from
+        const availableRecipesQuery = `
+            SELECT "recipeId", "title", "description", "cuisine", "difficulty", "cookingTime", "rating"
+            FROM "recipes"
+            WHERE "recipeId" NOT IN (
+                SELECT "recipeId" FROM "userFavorites" WHERE "userId" = $1
+            )
+            ORDER BY "rating" DESC
+            LIMIT 100
+        `;
+
+        const availableRecipes = await pool.query(availableRecipesQuery, [userProfile.userId]);
+
+        const prompt = `
+Based on this user's cooking profile, recommend ${limit} recipes from the available options:
+
+User Profile:
+- Favorite recipes: ${userContext.favoriteRecipes.join(', ')}
+- Preferred cuisines: ${userContext.topCuisines.join(', ')}
+- Dietary restrictions: ${preferences.dietaryRestrictions?.join(', ') || 'None'}
+- Allergies: ${preferences.allergies?.join(', ') || 'None'}
+- Dislikes: ${preferences.dislikes?.join(', ') || 'None'}
+- Spice level: ${preferences.spiceLevel || 'Any'}
+- Max cooking time: ${preferences.maxCookingTime || 'No limit'} minutes
+
+Available recipes: ${availableRecipes.rows.map(r => `${r.recipeId}: ${r.title} (${r.cuisine}, ${r.difficulty})`).join(', ')}
+
+Respond with a JSON array of ${limit} recipe recommendations, each containing:
+- recipeId (number)
+- recommendationScore (1-10)
+${includeExplanation ? '- explanation (string explaining why this recipe fits the user)' : ''}
+
+Focus on variety, user preferences, and introducing new flavors that align with their taste profile.
+`;
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 1000
+        });
+
+        const aiRecommendations = JSON.parse(completion.choices[0].message.content || '[]');
+
+        // Enhance AI recommendations with recipe details
+        const enhancedRecommendations = await Promise.all(
+            aiRecommendations.map(async (rec: any) => {
+                const recipe = availableRecipes.rows.find(r => r.recipeId === rec.recipeId);
+                return {
+                    ...recipe,
+                    strategy: 'ai-enhanced',
+                    recommendationScore: rec.recommendationScore,
+                    explanation: rec.explanation || undefined
+                };
+            })
+        );
+
+        return enhancedRecommendations.filter(rec => rec.recipeId);
+    } catch (error) {
+        console.warn('AI recommendation failed, falling back to content-based:', error);
+        return getContentBasedRecommendations(preferences, userHistory, limit);
+    }
+}
+
+async function combineAndRankRecommendations(
+    collaborative: any[],
+    contentBased: any[],
+    aiEnhanced: any[],
+    limit: number
+) {
+    // Combine all recommendations with weighted scoring
+    const allRecommendations = new Map();
+
+    // Add collaborative recommendations (weight: 0.4)
+    collaborative.forEach(rec => {
+        const score = (rec.recommendation_strength || 1) * 0.4;
+        allRecommendations.set(rec.recipeId, {
+            ...rec,
+            combinedScore: score,
+            strategies: ['collaborative']
+        });
+    });
+
+    // Add content-based recommendations (weight: 0.3)
+    contentBased.forEach(rec => {
+        const score = (rec.preference_score || 1) * 0.3;
+        if (allRecommendations.has(rec.recipeId)) {
+            const existing = allRecommendations.get(rec.recipeId);
+            existing.combinedScore += score;
+            existing.strategies.push('content-based');
+        } else {
+            allRecommendations.set(rec.recipeId, {
+                ...rec,
+                combinedScore: score,
+                strategies: ['content-based']
+            });
+        }
+    });
+
+    // Add AI-enhanced recommendations (weight: 0.3)
+    aiEnhanced.forEach(rec => {
+        const score = (rec.recommendationScore || 5) * 0.3;
+        if (allRecommendations.has(rec.recipeId)) {
+            const existing = allRecommendations.get(rec.recipeId);
+            existing.combinedScore += score;
+            existing.strategies.push('ai-enhanced');
+            if (rec.explanation) existing.explanation = rec.explanation;
+        } else {
+            allRecommendations.set(rec.recipeId, {
+                ...rec,
+                combinedScore: score,
+                strategies: ['ai-enhanced']
+            });
+        }
+    });
+
+    // Sort by combined score and return top recommendations
+    return Array.from(allRecommendations.values())
+        .sort((a, b) => b.combinedScore - a.combinedScore)
+        .slice(0, limit)
+        .map(rec => ({
+            recipeId: rec.recipeId,
+            title: rec.title,
+            description: rec.description,
+            cuisine: rec.cuisine,
+            difficulty: rec.difficulty,
+            cookingTime: rec.cookingTime,
+            rating: rec.rating,
+            recommendationScore: Math.round(rec.combinedScore * 10) / 10,
+            strategies: rec.strategies,
+            explanation: rec.explanation
+        }));
+}
+
+// Additional helper functions for similar recipes, trending, etc.
+async function getRecipeDetails(recipeId: number) {
+    const query = `
+        SELECT "recipeId", "title", "description", "cuisine", "difficulty", "cookingTime", "rating"
+        FROM "recipes"
+        WHERE "recipeId" = $1
+    `;
+    const result = await pool.query(query, [recipeId]);
+    return result.rows[0];
+}
+
+async function getSimilarByIngredients(recipeId: number, limit: number) {
+    const query = `
+        WITH recipe_ingredients AS (
+            SELECT ri."ingredientId"
+            FROM "recipeIngredients" ri
+            WHERE ri."recipeId" = $1
+        )
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            COUNT(ri."ingredientId") as common_ingredients
+        FROM "recipes" r
+        JOIN "recipeIngredients" ri ON r."recipeId" = ri."recipeId"
+        WHERE ri."ingredientId" IN (SELECT "ingredientId" FROM recipe_ingredients)
+        AND r."recipeId" != $1
+        GROUP BY r."recipeId", r."title", r."cuisine", r."difficulty", r."cookingTime", r."rating"
+        HAVING COUNT(ri."ingredientId") >= 2
+        ORDER BY common_ingredients DESC, r."rating" DESC
+        LIMIT $2
+    `;
+
+    const result = await pool.query(query, [recipeId, limit]);
+    return result.rows.map(row => ({ ...row, similarity_type: 'ingredients' }));
+}
+
+async function getSimilarByCuisine(cuisine: string, excludeRecipeId: number, limit: number) {
+    const query = `
+        SELECT "recipeId", "title", "cuisine", "difficulty", "cookingTime", "rating"
+        FROM "recipes"
+        WHERE "cuisine" = $1 AND "recipeId" != $2
+        ORDER BY "rating" DESC
+        LIMIT $3
+    `;
+
+    const result = await pool.query(query, [cuisine, excludeRecipeId, limit]);
+    return result.rows.map(row => ({ ...row, similarity_type: 'cuisine' }));
+}
+
+async function getSimilarByDifficultyAndTime(difficulty: string, cookingTime: number, excludeRecipeId: number, limit: number) {
+    const query = `
+        SELECT "recipeId", "title", "cuisine", "difficulty", "cookingTime", "rating"
+        FROM "recipes"
+        WHERE "difficulty" = $1 
+        AND "cookingTime" BETWEEN $2 - 15 AND $2 + 15
+        AND "recipeId" != $3
+        ORDER BY ABS("cookingTime" - $2), "rating" DESC
+        LIMIT $4
+    `;
+
+    const result = await pool.query(query, [difficulty, cookingTime, excludeRecipeId, limit]);
+    return result.rows.map(row => ({ ...row, similarity_type: 'difficulty-time' }));
+}
+
+async function getAISimilarRecipes(baseRecipe: any, limit: number, includeExplanation: boolean) {
+    try {
+        const availableRecipesQuery = `
+            SELECT "recipeId", "title", "description", "cuisine", "difficulty", "cookingTime", "rating"
+            FROM "recipes"
+            WHERE "recipeId" != $1
+            ORDER BY "rating" DESC
+            LIMIT 50
+        `;
+
+        const availableRecipes = await pool.query(availableRecipesQuery, [baseRecipe.recipeId]);
+
+        const prompt = `
+Find ${limit} recipes similar to: "${baseRecipe.title}" (${baseRecipe.cuisine} cuisine, ${baseRecipe.difficulty} difficulty)
+
+Available recipes: ${availableRecipes.rows.map(r => `${r.recipeId}: ${r.title} (${r.cuisine})`).join(', ')}
+
+Consider conceptual similarity, cooking techniques, flavor profiles, and meal contexts.
+Respond with JSON array containing:
+- recipeId (number)
+- similarityScore (1-10)
+${includeExplanation ? '- explanation (why it\'s similar)' : ''}
+`;
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 800
+        });
+
+        const aiSimilar = JSON.parse(completion.choices[0].message.content || '[]');
+
+        return aiSimilar.map((rec: any) => {
+            const recipe = availableRecipes.rows.find(r => r.recipeId === rec.recipeId);
+            return {
+                ...recipe,
+                similarity_type: 'ai-conceptual',
+                similarityScore: rec.similarityScore,
+                explanation: rec.explanation
+            };
+        }).filter((rec: any) => rec.recipeId);
+    } catch (error) {
+        console.warn('AI similar recipes failed:', error);
+        return [];
+    }
+}
+
+async function combineAndRankSimilarRecipes(
+    ingredientSimilar: any[],
+    cuisineSimilar: any[],
+    difficultyTimeSimilar: any[],
+    aiSimilar: any[],
+    limit: number
+) {
+    const allSimilar = new Map();
+
+    // Weight different similarity types
+    const weights = {
+        ingredients: 0.4,
+        cuisine: 0.2,
+        'difficulty-time': 0.2,
+        'ai-conceptual': 0.2
+    };
+
+    [ingredientSimilar, cuisineSimilar, difficultyTimeSimilar, aiSimilar].forEach(similarArray => {
+        similarArray.forEach(rec => {
+            const weight = weights[rec.similarity_type as keyof typeof weights] || 0.1;
+            const score = (rec.common_ingredients || rec.similarityScore || 5) * weight;
+
+            if (allSimilar.has(rec.recipeId)) {
+                const existing = allSimilar.get(rec.recipeId);
+                existing.combinedScore += score;
+                existing.similarity_types.push(rec.similarity_type);
+            } else {
+                allSimilar.set(rec.recipeId, {
+                    ...rec,
+                    combinedScore: score,
+                    similarity_types: [rec.similarity_type]
+                });
+            }
+        });
+    });
+
+    return Array.from(allSimilar.values())
+        .sort((a, b) => b.combinedScore - a.combinedScore)
+        .slice(0, limit)
+        .map(rec => ({
+            recipeId: rec.recipeId,
+            title: rec.title,
+            cuisine: rec.cuisine,
+            difficulty: rec.difficulty,
+            cookingTime: rec.cookingTime,
+            rating: rec.rating,
+            similarityScore: Math.round(rec.combinedScore * 10) / 10,
+            similarity_types: rec.similarity_types,
+            explanation: rec.explanation
+        }));
+}
+
+// Additional implementations for trending, ingredient-based, and surprise recommendations
+
+async function getSeasonalRecommendations(period: string, limit: number) {
+    // Simplified seasonal logic - in production, this would be more sophisticated
+    const currentMonth = new Date().getMonth() + 1;
+    const seasonalIngredients = getSeasonalIngredients(currentMonth);
+
+    const query = `
+        SELECT DISTINCT
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            COUNT(ri."ingredientId") as seasonal_ingredient_count
+        FROM "recipes" r
+        JOIN "recipeIngredients" ri ON r."recipeId" = ri."recipeId"
+        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+        WHERE i."name" ILIKE ANY($1)
+        GROUP BY r."recipeId", r."title", r."cuisine", r."difficulty", r."cookingTime", r."rating"
+        ORDER BY seasonal_ingredient_count DESC, r."rating" DESC
+        LIMIT $2
+    `;
+
+    const result = await pool.query(query, [seasonalIngredients.map(ing => `%${ing}%`), limit]);
+    return result.rows.map(row => ({ ...row, recommendation_type: 'seasonal' }));
+}
+
+async function getPopularRecommendations(period: string, limit: number) {
+    const query = `
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            COUNT(uf."userId") as popularity_score
+        FROM "recipes" r
+        LEFT JOIN "userFavorites" uf ON r."recipeId" = uf."recipeId"
+        GROUP BY r."recipeId", r."title", r."cuisine", r."difficulty", r."cookingTime", r."rating"
+        ORDER BY popularity_score DESC, r."rating" DESC
+        LIMIT $1
+    `;
+
+    const result = await pool.query(query, [limit]);
+    return result.rows.map(row => ({ ...row, recommendation_type: 'popular' }));
+}
+
+async function getNewRecommendations(period: string, limit: number) {
+    const query = `
+        SELECT "recipeId", "title", "cuisine", "difficulty", "cookingTime", "rating", "createdAt"
+        FROM "recipes"
+        WHERE "createdAt" >= NOW() - INTERVAL '${period === 'day' ? '1 day' : period === 'week' ? '1 week' : '1 month'}'
+        ORDER BY "createdAt" DESC, "rating" DESC
+        LIMIT $1
+    `;
+
+    const result = await pool.query(query, [limit]);
+    return result.rows.map(row => ({ ...row, recommendation_type: 'new' }));
+}
+
+async function getAllTrendingRecommendations(period: string, limit: number) {
+    // Combine popular and seasonal recommendations
+    const popular = await getPopularRecommendations(period, Math.ceil(limit / 2));
+    const seasonal = await getSeasonalRecommendations(period, Math.floor(limit / 2));
+
+    return [...popular, ...seasonal];
+}
+
+function getSeasonalIngredients(month: number): string[] {
+    const seasonalMap: { [key: number]: string[] } = {
+        1: ['citrus', 'winter squash', 'cabbage', 'brussels sprouts'],
+        2: ['citrus', 'winter squash', 'cabbage', 'brussels sprouts'],
+        3: ['spring onions', 'asparagus', 'artichokes', 'peas'],
+        4: ['spring onions', 'asparagus', 'artichokes', 'peas'],
+        5: ['strawberries', 'spring greens', 'radishes', 'rhubarb'],
+        6: ['berries', 'stone fruits', 'zucchini', 'tomatoes'],
+        7: ['berries', 'stone fruits', 'zucchini', 'tomatoes'],
+        8: ['corn', 'peaches', 'eggplant', 'peppers'],
+        9: ['apples', 'pumpkin', 'winter squash', 'brussels sprouts'],
+        10: ['apples', 'pumpkin', 'winter squash', 'brussels sprouts'],
+        11: ['cranberries', 'sweet potatoes', 'winter greens', 'pomegranate'],
+        12: ['citrus', 'winter squash', 'cabbage', 'brussels sprouts']
+    };
+
+    return seasonalMap[month] || [];
+}
+
+// Additional helper functions for ingredient-based and surprise recommendations
+async function getExactIngredientMatches(ingredients: string[], excludeIngredients?: string[]) {
+    let query = `
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            COUNT(ri."ingredientId") as matching_ingredients,
+            array_agg(i."name") as recipe_ingredients
+        FROM "recipes" r
+        JOIN "recipeIngredients" ri ON r."recipeId" = ri."recipeId"
+        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+        WHERE i."name" ILIKE ANY($1)
+    `;
+
+    const params: any[] = [ingredients.map(ing => `%${ing}%`)];
+    let paramIndex = 2;
+
+    if (excludeIngredients?.length) {
+        query += ` AND r."recipeId" NOT IN (
+            SELECT DISTINCT ri2."recipeId"
+            FROM "recipeIngredients" ri2
+            JOIN "ingredients" i2 ON ri2."ingredientId" = i2."ingredientId"
+            WHERE i2."name" ILIKE ANY($${paramIndex})
+        )`;
+        params.push(excludeIngredients.map(ing => `%${ing}%`));
+        paramIndex++;
+    }
+
+    query += `
+        GROUP BY r."recipeId", r."title", r."cuisine", r."difficulty", r."cookingTime", r."rating"
+        HAVING COUNT(ri."ingredientId") >= $${paramIndex}
+        ORDER BY matching_ingredients DESC, r."rating" DESC
+        LIMIT 20
+    `;
+
+    params.push(Math.min(ingredients.length, 3)); // Require at least 3 matching ingredients or all provided
+
+    const result = await pool.query(query, params);
+    return result.rows.map(row => ({ ...row, match_type: 'exact' }));
+}
+
+async function getPartialIngredientMatches(ingredients: string[], excludeIngredients?: string[]) {
+    let query = `
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating",
+            COUNT(ri."ingredientId") as matching_ingredients
+        FROM "recipes" r
+        JOIN "recipeIngredients" ri ON r."recipeId" = ri."recipeId"
+        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+        WHERE i."name" ILIKE ANY($1)
+    `;
+
+    const params: any[] = [ingredients.map(ing => `%${ing}%`)];
+    let paramIndex = 2;
+
+    if (excludeIngredients?.length) {
+        query += ` AND r."recipeId" NOT IN (
+            SELECT DISTINCT ri2."recipeId"
+            FROM "recipeIngredients" ri2
+            JOIN "ingredients" i2 ON ri2."ingredientId" = i2."ingredientId"
+            WHERE i2."name" ILIKE ANY($${paramIndex})
+        )`;
+        params.push(excludeIngredients.map(ing => `%${ing}%`));
+        paramIndex++;
+    }
+
+    query += `
+        GROUP BY r."recipeId", r."title", r."cuisine", r."difficulty", r."cookingTime", r."rating"
+        HAVING COUNT(ri."ingredientId") >= 1 AND COUNT(ri."ingredientId") < $${paramIndex}
+        ORDER BY matching_ingredients DESC, r."rating" DESC
+        LIMIT 15
+    `;
+
+    params.push(Math.min(ingredients.length, 3));
+
+    const result = await pool.query(query, params);
+    return result.rows.map(row => ({ ...row, match_type: 'partial' }));
+}
+
+async function getAIIngredientSuggestions(ingredients: string[], excludeIngredients?: string[], userProfile?: any) {
+    try {
+        const prompt = `
+Given these available ingredients: ${ingredients.join(', ')}
+${excludeIngredients?.length ? `Avoiding: ${excludeIngredients.join(', ')}` : ''}
+${userProfile ? `User preferences: ${JSON.stringify(userProfile.preferences)}` : ''}
+
+Suggest 5 creative recipe ideas that make good use of these ingredients.
+Consider flavor combinations, cooking techniques, and creative applications.
+
+Respond with JSON array containing:
+- title (string): Creative recipe name
+- description (string): Brief description
+- cuisine (string): Cuisine type
+- difficulty ('easy'|'medium'|'hard')
+- cookingTime (number): Estimated minutes
+- creativity_score (1-10): How creative/unique the suggestion is
+- explanation (string): Why this combination works well
+`;
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.8,
+            max_tokens: 1000
+        });
+
+        const aiSuggestions = JSON.parse(completion.choices[0].message.content || '[]');
+        return aiSuggestions.map((suggestion: any) => ({
+            ...suggestion,
+            match_type: 'ai-creative',
+            recipeId: null // These are creative suggestions, not existing recipes
+        }));
+    } catch (error) {
+        console.warn('AI ingredient suggestions failed:', error);
+        return [];
+    }
+}
+
+async function combineIngredientRecommendations(
+    exactMatches: any[],
+    partialMatches: any[],
+    aiSuggestions: any[],
+    limit: number
+) {
+    // Prioritize exact matches, then partial matches, then AI suggestions
+    const combined = [
+        ...exactMatches.map(rec => ({ ...rec, priority: 3 })),
+        ...partialMatches.map(rec => ({ ...rec, priority: 2 })),
+        ...aiSuggestions.map(rec => ({ ...rec, priority: 1 }))
+    ];
+
+    return combined
+        .sort((a, b) => {
+            if (a.priority !== b.priority) return b.priority - a.priority;
+            if (a.matching_ingredients && b.matching_ingredients) {
+                return b.matching_ingredients - a.matching_ingredients;
+            }
+            if (a.creativity_score && b.creativity_score) {
+                return b.creativity_score - a.creativity_score;
+            }
+            return (b.rating || 0) - (a.rating || 0);
+        })
+        .slice(0, limit);
+}
+
+async function getPersonalizedSurpriseRecommendations(userProfile: any, limit: number) {
+    // Get recipes from cuisines the user hasn't tried much
+    const query = `
+        WITH user_cuisines AS (
+            SELECT r."cuisine", COUNT(*) as frequency
+            FROM "userFavorites" uf
+            JOIN "recipes" r ON uf."recipeId" = r."recipeId"
+            WHERE uf."userId" = $1
+            GROUP BY r."cuisine"
+        ),
+        unexplored_cuisines AS (
+            SELECT DISTINCT r."cuisine"
+            FROM "recipes" r
+            WHERE r."cuisine" NOT IN (SELECT "cuisine" FROM user_cuisines)
+            OR r."cuisine" IN (
+                SELECT "cuisine" FROM user_cuisines WHERE frequency <= 1
+            )
+        )
+        SELECT 
+            r."recipeId",
+            r."title",
+            r."cuisine",
+            r."difficulty",
+            r."cookingTime",
+            r."rating"
+        FROM "recipes" r
+        WHERE r."cuisine" IN (SELECT "cuisine" FROM unexplored_cuisines)
+        AND r."rating" >= 4.0
+        ORDER BY RANDOM()
+        LIMIT $2
+    `;
+
+    const result = await pool.query(query, [userProfile.userId, limit]);
+    return result.rows.map(row => ({ ...row, surprise_type: 'cuisine-exploration' }));
+}
+
+async function getGeneralSurpriseRecommendations(limit: number) {
+    const query = `
+        SELECT "recipeId", "title", "cuisine", "difficulty", "cookingTime", "rating"
+        FROM "recipes"
+        WHERE "rating" >= 4.0
+        ORDER BY RANDOM()
+        LIMIT $1
+    `;
+
+    const result = await pool.query(query, [limit]);
+    return result.rows.map(row => ({ ...row, surprise_type: 'random-discovery' }));
+}
+
+export default router; 

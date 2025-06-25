@@ -1,21 +1,15 @@
 export interface User {
-    id: number;
+    id?: number;
+    userId: number;
     email: string;
-    firstName: string;
-    lastName: string;
-    role: 'User' | 'Moderator' | 'Admin';
-    isEmailVerified: boolean;
-    createdAt: string;
-    updatedAt: string;
-    profile?: {
-        bio?: string;
-        avatar?: string;
-        preferences?: {
-            theme: 'light' | 'dark' | 'system';
-            notifications: boolean;
-            privacy: 'public' | 'private';
-        };
-    };
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    isVerified?: boolean;
+    isGuest?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface LoginCredentials {
@@ -41,7 +35,7 @@ export interface AuthTokens {
 
 export interface AuthState {
     user: User | null;
-    tokens: AuthTokens | null;
+    token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;
@@ -50,6 +44,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
     login: (credentials: LoginCredentials) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
+    guestLogin: () => Promise<void>;
     logout: () => Promise<void>;
     refreshToken: () => Promise<void>;
     clearError: () => void;
@@ -59,7 +54,7 @@ export interface AuthContextType extends AuthState {
 export interface ApiError {
     message: string;
     status: number;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
 }
 
 export interface AuthResponse {

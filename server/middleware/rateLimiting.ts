@@ -30,7 +30,7 @@ const generateKeyGenerator = (prefix: string) => {
 
 // Custom skip function for authenticated users (higher limits)
 const skipAuthenticated = (req: Request): boolean => {
-    return !!req.user?.id; // Skip rate limit if user is authenticated
+    return !!req.user?.userId; // Skip rate limit if user is authenticated
 };
 
 // Rate limit configurations
@@ -153,9 +153,13 @@ const slowDownConfigs = {
         delayAfter: (req: Request) => {
             return req.user?.userId ? 500 : 50; // Higher threshold for authenticated users
         },
-        delayMs: 500, // Add 500ms delay per request after threshold
+        delayMs: (used, req) => {
+            const delayAfter = req.slowDown.limit;
+            return (used - delayAfter) * 500;
+        }, // Add 500ms delay per request after threshold
         maxDelayMs: 20000, // Maximum delay of 20 seconds
         keyGenerator: generateKeyGenerator('slowdown'),
+        validate: { delayMs: false }, // Disable the warning
         ...(redisClient && {
             store: new (require('express-slow-down/redis'))({
                 client: redisClient,
@@ -170,9 +174,13 @@ const slowDownConfigs = {
         delayAfter: (req: Request) => {
             return req.user?.userId ? 25 : 3; // Start slowing down before rate limit
         },
-        delayMs: 2000, // 2 second delay per request
+        delayMs: (used, req) => {
+            const delayAfter = req.slowDown.limit;
+            return (used - delayAfter) * 2000;
+        }, // 2 second delay per request
         maxDelayMs: 60000, // Maximum delay of 1 minute
         keyGenerator: generateKeyGenerator('ai-slowdown'),
+        validate: { delayMs: false }, // Disable the warning
         ...(redisClient && {
             store: new (require('express-slow-down/redis'))({
                 client: redisClient,

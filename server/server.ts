@@ -8,12 +8,17 @@ import recipeRoutes from './routes/recipes';
 import preferencesRoutes from './routes/preferences';
 import ingredientsRoutes from './routes/ingredients';
 import searchRoutes from './routes/search';
+import recommendationsRoutes from './routes/recommendations';
 import migrationsRoutes from './routes/migrations';
 import databaseRoutes from './routes/database';
+import securityRoutes from './routes/security';
+import privacyRoutes from './routes/privacy';
+import analyticsRoutes from './routes/analytics';
 import db from './db/db';
 
 // Security and Rate Limiting Middleware
 import { allSecurityMiddleware } from './middleware/security';
+import { enhancedSecurityMiddleware } from './middleware/enhanced-security';
 import {
   rateLimiters,
   slowDownLimiters,
@@ -27,7 +32,10 @@ const app = express();
 // Trust proxy headers for accurate IP detection behind load balancers
 app.set('trust proxy', 1);
 
-// Apply comprehensive security middleware first
+// Apply enhanced security middleware first (includes HTTPS enforcement, security headers, etc.)
+app.use(enhancedSecurityMiddleware);
+
+// Apply comprehensive security middleware
 app.use(allSecurityMiddleware);
 
 // Parse JSON with size limit (redundant with security middleware, but explicit)
@@ -66,7 +74,47 @@ app.get('/api/health', (req, res) => {
     success: true,
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
+    security: {
+      httpsEnforced: process.env.NODE_ENV === 'production',
+      securityHeaders: true,
+      rateLimiting: true,
+      inputSanitization: true,
+      auditLogging: true
+    }
+  });
+});
+
+// Security status endpoint
+app.get('/api/security-status', (req, res) => {
+  res.json({
+    success: true,
+    security: {
+      environment: process.env.NODE_ENV,
+      httpsEnforced: process.env.NODE_ENV === 'production',
+      securityHeaders: {
+        csp: true,
+        hsts: true,
+        xssProtection: true,
+        noSniff: true,
+        frameOptions: true
+      },
+      rateLimiting: {
+        enabled: true,
+        redis: !!process.env.REDIS_URL
+      },
+      monitoring: {
+        auditLogging: true,
+        securityEvents: true,
+        requestTracing: true
+      },
+      compliance: {
+        gdprReady: false, // Will be implemented in subtask 16.4
+        dataEncryption: true,
+        accessControls: true
+      }
+    },
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -83,11 +131,21 @@ app.use('/api/search', rateLimiters.search, searchRoutes);
 app.use('/api/database', rateLimiters.admin, databaseRoutes);
 app.use('/api/migrations', rateLimiters.admin, migrationsRoutes);
 
+// Security monitoring routes with admin rate limiting
+app.use('/api/security', rateLimiters.admin, securityRoutes);
+
+// Privacy and GDPR compliance routes with admin rate limiting
+app.use('/api/privacy', rateLimiters.admin, privacyRoutes);
+
 // Regular API routes with standard rate limiting (already applied globally)
 app.use('/api/users', userRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/ingredients', ingredientsRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
+
+// Analytics routes with standard rate limiting
+app.use('/api/analytics', analyticsRoutes);
 
 // Future: AI recipe generation routes will use AI-specific rate limiting
 // app.use('/api/ai', rateLimiters.ai, slowDownLimiters.ai, aiRoutes);
@@ -100,6 +158,7 @@ app.use('/api/*', (req, res) => {
     message: `API endpoint ${req.method} ${req.originalUrl} not found`,
     availableEndpoints: [
       'GET /api/health',
+      'GET /api/security-status',
       'GET /api/db-test',
       'GET /api/rate-limit-status',
       'POST /api/auth/register',
@@ -109,6 +168,7 @@ app.use('/api/*', (req, res) => {
       'GET /api/preferences',
       'GET /api/ingredients',
       'GET /api/search',
+      'GET /api/recommendations',
       'GET /api/database/health',
       'GET /api/migrations/status'
     ]
@@ -126,9 +186,10 @@ const server = app.listen(PORT, () => {
   console.log(`📡 Server listening on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🛡️  Security status: http://localhost:${PORT}/api/security-status`);
   console.log(`📊 Rate limits: http://localhost:${PORT}/api/rate-limit-status`);
   console.log(`🗄️  Database: http://localhost:${PORT}/api/db-test`);
-  console.log('🛡️  Security middleware: CORS, Helmet, Rate Limiting, Input Sanitization');
+  console.log('🛡️  Enhanced Security: HTTPS enforcement, CSP nonces, security monitoring');
   console.log('📋 Available endpoints: http://localhost:' + PORT + '/api/*');
 });
 

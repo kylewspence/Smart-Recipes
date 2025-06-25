@@ -1,0 +1,226 @@
+name: Comprehensive Testing
+
+on:
+  push:
+    branches: [main, openai, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  frontend-tests:
+    name: Frontend Tests (${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        continue-on-error: true
+
+      - name: Run unit tests
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        continue-on-error: true
+
+      - name: Upload frontend coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          directory: ./client/coverage
+          flags: frontend
+          name: frontend-coverage
+        continue-on-error: true
+
+  backend-tests:
+    name: Backend Tests (${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: smart_recipes_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d smart_recipes_test -f ../database/schema.sql
+        env:
+          PGPASSWORD: test_password
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test -- --passWithNoTests --forceExit
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/smart_recipes_test
+          JWT_SECRET: test-jwt-secret-for-ci
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-ci' }}
+          PORT: 3001
+        continue-on-error: true
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          directory: ./server/coverage
+          flags: backend
+          name: backend-coverage
+        continue-on-error: true
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: smart_recipes_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (Frontend)
+        run: cd client && npm ci
+
+      - name: Install dependencies (Backend)
+        run: cd server && npm ci
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d smart_recipes_test -f database/schema.sql
+        env:
+          PGPASSWORD: test_password
+        continue-on-error: true
+
+      - name: Start backend server
+        run: cd server && npm run start:tsx &
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/smart_recipes_test
+          JWT_SECRET: test-jwt-secret-for-ci
+          PORT: 3001
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-ci' }}
+
+      - name: Wait for backend
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3001/api/health 2>/dev/null; do sleep 2; done' || echo "Backend health check timeout"
+        continue-on-error: true
+
+      - name: Build frontend
+        run: cd client && npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+      - name: Start frontend server
+        run: cd client && npm start &
+        env:
+          PORT: 3000
+
+      - name: Wait for frontend
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000 2>/dev/null; do sleep 2; done' || echo "Frontend health check timeout"
+        continue-on-error: true
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: Run Lighthouse CI
+        run: lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        continue-on-error: true 

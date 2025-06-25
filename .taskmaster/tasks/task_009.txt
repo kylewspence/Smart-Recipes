@@ -7,6 +7,44 @@
 # Details:
 Build advanced search and filtering capabilities for recipes including full-text search, ingredient-based search, complex filters, and AI-powered recipe recommendations.
 
+## 🧭 ANTI-DRIFT REMINDERS:
+- **ALWAYS review previous work**: Before starting, examine completed tasks 1-5 to understand established patterns, conventions, and architectural decisions
+- **Maintain consistency**: Follow the same coding style, naming conventions, file structure, and patterns already established in the project
+- **Check integration points**: Ensure your work integrates seamlessly with existing authentication, database, API, and frontend systems
+- **Review project context**: Reference the Smart Recipes PRD, tech stack (Next.js, Express, PostgreSQL, OpenAI), and overall goals regularly
+- **Validate against completed work**: Compare your implementation with similar completed features to ensure consistency
+
+## 🧹 CLEAN CODE PRINCIPLES:
+- **DRY (Don't Repeat Yourself)**: Reuse existing utilities, components, types, and logic wherever possible
+  - Check client/lib/, client/components/ui/, server/lib/ for existing implementations
+  - Review server/types/, client/lib/types/ for type definitions
+  - Examine server/middleware/, client/lib/services/ for reusable patterns
+- **Single Responsibility**: Each function, component, and module should have one clear purpose
+- **Modular Architecture**: Build reusable, maintainable pieces that can be easily tested and extended
+- **Consistent Patterns**: Follow established patterns for:
+  - Error handling (server/lib/error-middleware.ts, client/lib/services/)
+  - Validation (server/schemas/, Zod patterns)
+  - API responses (server/routes/ patterns)
+  - Component structure (client/components/ patterns)
+- **Type Safety**: Maintain strict TypeScript usage with proper interfaces and type definitions
+- **Performance First**: Consider performance implications and optimize for production use
+- **Security Minded**: Always consider security implications and follow established security patterns
+
+## 🔧 REUSABILITY CHECKLIST:
+- Can this logic be abstracted into a reusable utility?
+- Does this component follow the established design system (shadcn/ui + Tailwind)?
+- Are there existing similar implementations I can extend?
+- Will this integration work with existing authentication/authorization?
+- Does this follow the same error handling patterns?
+- Is this compatible with existing state management?
+
+## 📋 INTEGRATION REQUIREMENTS:
+- Must work with existing AuthContext (client/lib/contexts/AuthContext.tsx)
+- Follow established API patterns (server/routes/)
+- Use existing validation schemas (server/schemas/)
+- Integrate with current database schema (database/schema.sql)
+- Maintain compatibility with existing UI components (client/components/)
+
 # Test Strategy:
 Test search performance and accuracy with large recipe databases and verify recommendation quality
 
@@ -17,11 +55,87 @@ Test search performance and accuracy with large recipe databases and verify reco
 ### Details:
 Implement full-text search across recipe titles, descriptions, ingredients, and instructions with relevance ranking, search suggestions, and typo tolerance.
 
+## 🧭 ANTI-DRIFT REMINDERS:
+- **ALWAYS review previous work**: Before starting, examine completed tasks 1-5 to understand established patterns, conventions, and architectural decisions
+- **Maintain consistency**: Follow the same coding style, naming conventions, file structure, and patterns already established in the project
+- **Check integration points**: Ensure your work integrates seamlessly with existing authentication, database, API, and frontend systems
+- **Review project context**: Reference the Smart Recipes PRD, tech stack (Next.js, Express, PostgreSQL, OpenAI), and overall goals regularly
+- **Validate against completed work**: Compare your implementation with similar completed features to ensure consistency
+
+## 🧹 CLEAN CODE PRINCIPLES:
+- **DRY (Don't Repeat Yourself)**: Reuse existing utilities, components, types, and logic wherever possible
+  - Check client/lib/, client/components/ui/, server/lib/ for existing implementations
+  - Review server/types/, client/lib/types/ for type definitions
+  - Examine server/middleware/, client/lib/services/ for reusable patterns
+- **Single Responsibility**: Each function, component, and module should have one clear purpose
+- **Modular Architecture**: Build reusable, maintainable pieces that can be easily tested and extended
+- **Consistent Patterns**: Follow established patterns for:
+  - Error handling (server/lib/error-middleware.ts, client/lib/services/)
+  - Validation (server/schemas/, Zod patterns)
+  - API responses (server/routes/ patterns)
+  - Component structure (client/components/ patterns)
+- **Type Safety**: Maintain strict TypeScript usage with proper interfaces and type definitions
+- **Performance First**: Consider performance implications and optimize for production use
+- **Security Minded**: Always consider security implications and follow established security patterns
+
+## 🔧 REUSABILITY CHECKLIST:
+- Can this logic be abstracted into a reusable utility?
+- Does this component follow the established design system (shadcn/ui + Tailwind)?
+- Are there existing similar implementations I can extend?
+- Will this integration work with existing authentication/authorization?
+- Does this follow the same error handling patterns?
+- Is this compatible with existing state management?
+
+## 📋 INTEGRATION REQUIREMENTS:
+- Must work with existing AuthContext (client/lib/contexts/AuthContext.tsx)
+- Follow established API patterns (server/routes/)
+- Use existing validation schemas (server/schemas/)
+- Integrate with current database schema (database/schema.sql)
+- Maintain compatibility with existing UI components (client/components/)
+
 ## 9.2. Build Advanced Filter System [pending]
 ### Dependencies: None
 ### Description: Create sophisticated filtering options for recipes
 ### Details:
 Build filtering by cuisine, cooking time, difficulty, dietary restrictions, ingredients, ratings, and custom tags with combined filters and saved filter presets.
+
+## 🧭 ANTI-DRIFT REMINDERS:
+- **ALWAYS review previous work**: Before starting, examine completed tasks 1-5 to understand established patterns, conventions, and architectural decisions
+- **Maintain consistency**: Follow the same coding style, naming conventions, file structure, and patterns already established in the project
+- **Check integration points**: Ensure your work integrates seamlessly with existing authentication, database, API, and frontend systems
+- **Review project context**: Reference the Smart Recipes PRD, tech stack (Next.js, Express, PostgreSQL, OpenAI), and overall goals regularly
+- **Validate against completed work**: Compare your implementation with similar completed features to ensure consistency
+
+## 🧹 CLEAN CODE PRINCIPLES:
+- **DRY (Don't Repeat Yourself)**: Reuse existing utilities, components, types, and logic wherever possible
+  - Check client/lib/, client/components/ui/, server/lib/ for existing implementations
+  - Review server/types/, client/lib/types/ for type definitions
+  - Examine server/middleware/, client/lib/services/ for reusable patterns
+- **Single Responsibility**: Each function, component, and module should have one clear purpose
+- **Modular Architecture**: Build reusable, maintainable pieces that can be easily tested and extended
+- **Consistent Patterns**: Follow established patterns for:
+  - Error handling (server/lib/error-middleware.ts, client/lib/services/)
+  - Validation (server/schemas/, Zod patterns)
+  - API responses (server/routes/ patterns)
+  - Component structure (client/components/ patterns)
+- **Type Safety**: Maintain strict TypeScript usage with proper interfaces and type definitions
+- **Performance First**: Consider performance implications and optimize for production use
+- **Security Minded**: Always consider security implications and follow established security patterns
+
+## 🔧 REUSABILITY CHECKLIST:
+- Can this logic be abstracted into a reusable utility?
+- Does this component follow the established design system (shadcn/ui + Tailwind)?
+- Are there existing similar implementations I can extend?
+- Will this integration work with existing authentication/authorization?
+- Does this follow the same error handling patterns?
+- Is this compatible with existing state management?
+
+## 📋 INTEGRATION REQUIREMENTS:
+- Must work with existing AuthContext (client/lib/contexts/AuthContext.tsx)
+- Follow established API patterns (server/routes/)
+- Use existing validation schemas (server/schemas/)
+- Integrate with current database schema (database/schema.sql)
+- Maintain compatibility with existing UI components (client/components/)
 
 ## 9.3. Add AI-Powered Recipe Recommendations [pending]
 ### Dependencies: None
@@ -29,9 +143,85 @@ Build filtering by cuisine, cooking time, difficulty, dietary restrictions, ingr
 ### Details:
 Build recommendation engine based on user preferences, cooking history, similar user patterns, seasonal ingredients, and trending recipes.
 
+## 🧭 ANTI-DRIFT REMINDERS:
+- **ALWAYS review previous work**: Before starting, examine completed tasks 1-5 to understand established patterns, conventions, and architectural decisions
+- **Maintain consistency**: Follow the same coding style, naming conventions, file structure, and patterns already established in the project
+- **Check integration points**: Ensure your work integrates seamlessly with existing authentication, database, API, and frontend systems
+- **Review project context**: Reference the Smart Recipes PRD, tech stack (Next.js, Express, PostgreSQL, OpenAI), and overall goals regularly
+- **Validate against completed work**: Compare your implementation with similar completed features to ensure consistency
+
+## 🧹 CLEAN CODE PRINCIPLES:
+- **DRY (Don't Repeat Yourself)**: Reuse existing utilities, components, types, and logic wherever possible
+  - Check client/lib/, client/components/ui/, server/lib/ for existing implementations
+  - Review server/types/, client/lib/types/ for type definitions
+  - Examine server/middleware/, client/lib/services/ for reusable patterns
+- **Single Responsibility**: Each function, component, and module should have one clear purpose
+- **Modular Architecture**: Build reusable, maintainable pieces that can be easily tested and extended
+- **Consistent Patterns**: Follow established patterns for:
+  - Error handling (server/lib/error-middleware.ts, client/lib/services/)
+  - Validation (server/schemas/, Zod patterns)
+  - API responses (server/routes/ patterns)
+  - Component structure (client/components/ patterns)
+- **Type Safety**: Maintain strict TypeScript usage with proper interfaces and type definitions
+- **Performance First**: Consider performance implications and optimize for production use
+- **Security Minded**: Always consider security implications and follow established security patterns
+
+## 🔧 REUSABILITY CHECKLIST:
+- Can this logic be abstracted into a reusable utility?
+- Does this component follow the established design system (shadcn/ui + Tailwind)?
+- Are there existing similar implementations I can extend?
+- Will this integration work with existing authentication/authorization?
+- Does this follow the same error handling patterns?
+- Is this compatible with existing state management?
+
+## 📋 INTEGRATION REQUIREMENTS:
+- Must work with existing AuthContext (client/lib/contexts/AuthContext.tsx)
+- Follow established API patterns (server/routes/)
+- Use existing validation schemas (server/schemas/)
+- Integrate with current database schema (database/schema.sql)
+- Maintain compatibility with existing UI components (client/components/)
+
 ## 9.4. Implement Smart Recipe Discovery [pending]
 ### Dependencies: None
 ### Description: Add intelligent recipe discovery features
 ### Details:
 Build features like 'surprise me' recipe generation, ingredient-based discovery, cuisine exploration, and personalized recipe feeds.
+
+## 🧭 ANTI-DRIFT REMINDERS:
+- **ALWAYS review previous work**: Before starting, examine completed tasks 1-5 to understand established patterns, conventions, and architectural decisions
+- **Maintain consistency**: Follow the same coding style, naming conventions, file structure, and patterns already established in the project
+- **Check integration points**: Ensure your work integrates seamlessly with existing authentication, database, API, and frontend systems
+- **Review project context**: Reference the Smart Recipes PRD, tech stack (Next.js, Express, PostgreSQL, OpenAI), and overall goals regularly
+- **Validate against completed work**: Compare your implementation with similar completed features to ensure consistency
+
+## 🧹 CLEAN CODE PRINCIPLES:
+- **DRY (Don't Repeat Yourself)**: Reuse existing utilities, components, types, and logic wherever possible
+  - Check client/lib/, client/components/ui/, server/lib/ for existing implementations
+  - Review server/types/, client/lib/types/ for type definitions
+  - Examine server/middleware/, client/lib/services/ for reusable patterns
+- **Single Responsibility**: Each function, component, and module should have one clear purpose
+- **Modular Architecture**: Build reusable, maintainable pieces that can be easily tested and extended
+- **Consistent Patterns**: Follow established patterns for:
+  - Error handling (server/lib/error-middleware.ts, client/lib/services/)
+  - Validation (server/schemas/, Zod patterns)
+  - API responses (server/routes/ patterns)
+  - Component structure (client/components/ patterns)
+- **Type Safety**: Maintain strict TypeScript usage with proper interfaces and type definitions
+- **Performance First**: Consider performance implications and optimize for production use
+- **Security Minded**: Always consider security implications and follow established security patterns
+
+## 🔧 REUSABILITY CHECKLIST:
+- Can this logic be abstracted into a reusable utility?
+- Does this component follow the established design system (shadcn/ui + Tailwind)?
+- Are there existing similar implementations I can extend?
+- Will this integration work with existing authentication/authorization?
+- Does this follow the same error handling patterns?
+- Is this compatible with existing state management?
+
+## 📋 INTEGRATION REQUIREMENTS:
+- Must work with existing AuthContext (client/lib/contexts/AuthContext.tsx)
+- Follow established API patterns (server/routes/)
+- Use existing validation schemas (server/schemas/)
+- Integrate with current database schema (database/schema.sql)
+- Maintain compatibility with existing UI components (client/components/)
 

@@ -241,6 +241,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, []);
 
+    // Guest login function
+    const guestLogin = useCallback(async () => {
+        try {
+            dispatch({ type: 'AUTH_START' });
+
+            const authData = await authService.guestLogin();
+
+            dispatch({
+                type: 'AUTH_SUCCESS',
+                payload: {
+                    user: authData.user,
+                    tokens: {
+                        accessToken: authData.token,
+                        refreshToken: authData.refreshToken,
+                        expiresAt: Date.now() + (authData.expiresIn * 1000),
+                    },
+                },
+            });
+        } catch (error: any) {
+            dispatch({
+                type: 'AUTH_FAILURE',
+                payload: error.message || 'Guest login failed',
+            });
+            throw error;
+        }
+    }, []);
+
     // Logout function
     const logout = useCallback(async () => {
         try {
@@ -314,6 +341,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         ...state,
         login,
         register,
+        guestLogin,
         logout,
         refreshToken,
         clearError,

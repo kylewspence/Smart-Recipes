@@ -101,10 +101,10 @@ export const isTokenExpired = (): boolean => {
 // Helper function to create API errors
 const createApiError = (error: AxiosError): ApiError => {
     const response = error.response;
-    const responseData = response?.data as any;
-    const message = responseData?.message || error.message || 'An unexpected error occurred';
+    const responseData = response?.data as Record<string, unknown>;
+    const message = (responseData?.message as string) || error.message || 'An unexpected error occurred';
     const status = response?.status || 500;
-    const details = responseData?.details || {};
+    const details = (responseData?.details as Record<string, unknown>) || {};
 
     return {
         message,
@@ -159,6 +159,34 @@ export const authService = {
             // Store user data
             if (typeof window !== 'undefined') {
                 localStorage.setItem('user_data', JSON.stringify(authData.user));
+            }
+
+            return authData;
+        } catch (error) {
+            throw createApiError(error as AxiosError);
+        }
+    },
+
+    // Guest login - create temporary guest session
+    async guestLogin(): Promise<AuthResponse> {
+        try {
+            const response = await authApi.post<AuthResponse>('/auth/guest');
+            const authData = response.data;
+
+            // Store tokens
+            const expiresAt = Date.now() + (authData.expiresIn || 3600) * 1000; // Default 1 hour
+            storeAuthTokens({
+                accessToken: authData.token,
+                refreshToken: authData.refreshToken,
+                expiresAt,
+            });
+
+            // Store user data with guest flag
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('user_data', JSON.stringify({
+                    ...authData.user,
+                    isGuest: true
+                }));
             }
 
             return authData;

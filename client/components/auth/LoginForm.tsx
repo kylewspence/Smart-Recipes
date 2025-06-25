@@ -31,7 +31,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     const [showPassword, setShowPassword] = useState(false);
-    const { login, isLoading, error } = useAuth();
+    const { login, guestLogin, isLoading, error } = useAuth();
 
     const {
         register,
@@ -56,14 +56,15 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
             if (redirectTo) {
                 window.location.href = redirectTo;
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Handle specific error cases
-            if (err.status === 401) {
+            const errorObj = err as { status?: number; message?: string };
+            if (errorObj.status === 401) {
                 setError('root', {
                     type: 'manual',
                     message: 'Invalid email or password. Please try again.',
                 });
-            } else if (err.status === 429) {
+            } else if (errorObj.status === 429) {
                 setError('root', {
                     type: 'manual',
                     message: 'Too many login attempts. Please try again later.',
@@ -71,9 +72,31 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
             } else {
                 setError('root', {
                     type: 'manual',
-                    message: err.message || 'Login failed. Please try again.',
+                    message: errorObj.message || 'Login failed. Please try again.',
                 });
             }
+        }
+    };
+
+    const handleGuestLogin = async () => {
+        try {
+            await guestLogin();
+
+            // For guest users, always redirect to onboarding
+            if (redirectTo) {
+                window.location.href = redirectTo;
+            } else {
+                // Default redirect for guest users to onboarding
+                window.location.href = '/onboarding';
+            }
+
+            onSuccess?.();
+        } catch (err: unknown) {
+            const errorObj = err as { status?: number; message?: string };
+            setError('root', {
+                type: 'manual',
+                message: errorObj.message || 'Guest login failed. Please try again.',
+            });
         }
     };
 
@@ -239,12 +262,54 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                             'Sign In'
                         )}
                     </button>
+
+                    {/* Divider */}
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                                Or
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Guest Login Button */}
+                    <button
+                        type="button"
+                        onClick={handleGuestLogin}
+                        disabled={isFormLoading}
+                        className={`
+              w-full flex justify-center items-center py-3 px-4 border-2 border-gray-300 dark:border-gray-600
+              rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 transition-all duration-200 ease-in-out
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500
+              ${isFormLoading
+                                ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed'
+                                : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transform hover:scale-[1.02] active:scale-[0.98]'
+                            }
+            `}
+                    >
+                        {isFormLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400 mr-2"></div>
+                                Loading...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Continue as Guest
+                            </>
+                        )}
+                    </button>
                 </form>
 
                 {/* Footer */}
                 <div className="mt-8 text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Don't have an account?{' '}
+                        Don&apos;t have an account?{' '}
                         <Link
                             href="/auth/register"
                             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"

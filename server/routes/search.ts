@@ -5,20 +5,21 @@ import { ClientError } from '../lib';
 
 const router = express.Router();
 
-// Unified search schema
+// Enhanced unified search schema
 const unifiedSearchSchema = z.object({
     query: z.string().min(1).max(200),
     type: z.enum(['all', 'recipes', 'ingredients', 'users']).default('all'),
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().min(0).default(0),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0),
+    fuzzy: z.coerce.boolean().default(false), // Enable fuzzy/typo-tolerant search
     filters: z.object({
         cuisine: z.string().optional(),
         difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
-        maxCookingTime: z.number().int().positive().optional(),
+        maxCookingTime: z.coerce.number().int().positive().optional(),
         spiceLevel: z.enum(['mild', 'medium', 'hot']).optional(),
         category: z.string().optional(),
-        minRating: z.number().min(1).max(5).optional(),
-        isGenerated: z.boolean().optional(),
+        minRating: z.coerce.number().min(1).max(5).optional(),
+        isGenerated: z.coerce.boolean().optional(),
         dateRange: z.object({
             start: z.string().optional(),
             end: z.string().optional()
@@ -26,46 +27,63 @@ const unifiedSearchSchema = z.object({
     }).optional()
 });
 
+// Enhanced advanced recipe search schema
 const advancedRecipeSearchSchema = z.object({
     query: z.string().optional(),
+    fuzzy: z.coerce.boolean().default(false),
     includeIngredients: z.array(z.string()).optional(),
     excludeIngredients: z.array(z.string()).optional(),
     cuisine: z.array(z.string()).optional(),
     difficulty: z.array(z.enum(['easy', 'medium', 'hard'])).optional(),
-    maxCookingTime: z.number().int().positive().optional(),
-    minCookingTime: z.number().int().positive().optional(),
+    maxCookingTime: z.coerce.number().int().positive().optional(),
+    minCookingTime: z.coerce.number().int().positive().optional(),
     spiceLevel: z.array(z.enum(['mild', 'medium', 'hot'])).optional(),
     tags: z.array(z.string()).optional(),
-    minRating: z.number().min(1).max(5).optional(),
-    maxRating: z.number().min(1).max(5).optional(),
+    minRating: z.coerce.number().min(1).max(5).optional(),
+    maxRating: z.coerce.number().min(1).max(5).optional(),
     servings: z.object({
-        min: z.number().int().positive().optional(),
-        max: z.number().int().positive().optional()
+        min: z.coerce.number().int().positive().optional(),
+        max: z.coerce.number().int().positive().optional()
     }).optional(),
-    isGenerated: z.boolean().optional(),
-    isFavorite: z.boolean().optional(),
-    userId: z.number().int().positive().optional(),
+    isGenerated: z.coerce.boolean().optional(),
+    isFavorite: z.coerce.boolean().optional(),
+    userId: z.coerce.number().int().positive().optional(),
     dateRange: z.object({
         start: z.string().optional(),
         end: z.string().optional()
     }).optional(),
     sortBy: z.enum(['relevance', 'rating', 'cookingTime', 'prepTime', 'recent', 'popular']).default('relevance'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
-    limit: z.number().int().positive().max(100).default(20),
-    offset: z.number().int().min(0).default(0)
+    limit: z.coerce.number().int().positive().max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0)
 });
 
+// Helper function to log search analytics
+async function logSearchAnalytics(query: string, userId: number | null, resultCount: number, searchType: string, filters?: any) {
+    try {
+        await db.query(`
+            INSERT INTO "searchAnalytics" ("query", "userId", "resultCount", "searchType", "filters")
+            VALUES ($1, $2, $3, $4, $5)
+        `, [query, userId, resultCount, searchType, filters ? JSON.stringify(filters) : null]);
+    } catch (error) {
+        // Don't fail the search if analytics logging fails
+        console.warn('Failed to log search analytics:', error);
+    }
+}
+
 /**
- * Unified search across all content types
+ * Enhanced unified search with full-text search capabilities
  * GET /api/search
  */
 router.get('/', async (req, res, next) => {
     try {
         const searchParams = unifiedSearchSchema.parse(req.query);
+        const userId = (req as any).user?.id || null;
 
         const results = {
             query: searchParams.query,
             type: searchParams.type,
+            fuzzy: searchParams.fuzzy,
             pagination: {
                 limit: searchParams.limit,
                 offset: searchParams.offset
@@ -73,20 +91,28 @@ router.get('/', async (req, res, next) => {
             results: {}
         };
 
+        let totalResults = 0;
+
         if (searchParams.type === 'all' || searchParams.type === 'recipes') {
-            const recipeResults = await searchRecipes(searchParams);
-            results.results.recipes = recipeResults;
+            const recipeResults = await searchRecipesEnhanced(searchParams);
+            (results.results as any).recipes = recipeResults;
+            totalResults += recipeResults.length;
         }
 
         if (searchParams.type === 'all' || searchParams.type === 'ingredients') {
-            const ingredientResults = await searchIngredients(searchParams);
-            results.results.ingredients = ingredientResults;
+            const ingredientResults = await searchIngredientsEnhanced(searchParams);
+            (results.results as any).ingredients = ingredientResults;
+            totalResults += ingredientResults.length;
         }
 
         if (searchParams.type === 'all' || searchParams.type === 'users') {
             const userResults = await searchUsers(searchParams);
-            results.results.users = userResults;
+            (results.results as any).users = userResults;
+            totalResults += userResults.length;
         }
+
+        // Log search analytics
+        await logSearchAnalytics(searchParams.query, userId, totalResults, searchParams.type, searchParams.filters);
 
         res.json({
             success: true,
@@ -98,60 +124,117 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
- * Advanced recipe search with complex filtering
+ * Enhanced advanced recipe search with full-text search
  * GET /api/search/recipes/advanced
  */
 router.get('/recipes/advanced', async (req, res, next) => {
     try {
         const searchParams = advancedRecipeSearchSchema.parse(req.query);
+        const userId = (req as any).user?.id || null;
 
         let whereConditions = [];
         let queryParams = [];
         let paramIndex = 1;
         let joinConditions = [];
+        let selectFields = [];
 
-        // Text search across multiple fields
+        // Enhanced full-text search with relevance ranking
         if (searchParams.query) {
-            whereConditions.push(`(
-                r."title" ILIKE $${paramIndex} OR 
-                r."description" ILIKE $${paramIndex} OR 
-                r."instructions" ILIKE $${paramIndex}
-            )`);
-            queryParams.push(`%${searchParams.query}%`);
+            if (searchParams.fuzzy) {
+                // Use trigram similarity for fuzzy matching
+                whereConditions.push(`(
+                    similarity(r."title", $${paramIndex}) > 0.3 OR
+                    similarity(r."description", $${paramIndex}) > 0.2 OR
+                    r."searchVector" @@ plainto_tsquery('english', $${paramIndex})
+                )`);
+                selectFields.push(`
+                    GREATEST(
+                        similarity(r."title", $${paramIndex}),
+                        similarity(r."description", $${paramIndex}),
+                        ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex}))
+                    ) as relevance_score
+                `);
+            } else {
+                // Use standard full-text search
+                whereConditions.push(`r."searchVector" @@ plainto_tsquery('english', $${paramIndex})`);
+                selectFields.push(`ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex})) as relevance_score`);
+            }
+            queryParams.push(searchParams.query);
             paramIndex++;
+        } else {
+            selectFields.push('0 as relevance_score');
         }
 
-        // Include specific ingredients
+        // Include specific ingredients with enhanced matching
         if (searchParams.includeIngredients && searchParams.includeIngredients.length > 0) {
-            whereConditions.push(`r."recipeId" IN (
-                SELECT ri."recipeId"
-                FROM "recipeIngredients" ri
-                JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
-                WHERE i."name" ILIKE ANY($${paramIndex})
-                GROUP BY ri."recipeId"
-                HAVING COUNT(DISTINCT i."ingredientId") = $${paramIndex + 1}
-            )`);
-            queryParams.push(searchParams.includeIngredients.map(ing => `%${ing}%`));
+            if (searchParams.fuzzy) {
+                whereConditions.push(`r."recipeId" IN (
+                    SELECT ri."recipeId"
+                    FROM "recipeIngredients" ri
+                    JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($${paramIndex}::text[]) AS search_ingredient
+                        WHERE similarity(i."name", search_ingredient) > 0.4
+                    )
+                    GROUP BY ri."recipeId"
+                    HAVING COUNT(DISTINCT i."ingredientId") >= $${paramIndex + 1}
+                )`);
+            } else {
+                whereConditions.push(`r."recipeId" IN (
+                    SELECT ri."recipeId"
+                    FROM "recipeIngredients" ri
+                    JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                    WHERE i."name" ILIKE ANY($${paramIndex})
+                    GROUP BY ri."recipeId"
+                    HAVING COUNT(DISTINCT i."ingredientId") = $${paramIndex + 1}
+                )`);
+                queryParams.push(searchParams.includeIngredients.map(ing => `%${ing}%`));
+            }
+
+            if (searchParams.fuzzy) {
+                queryParams.push(searchParams.includeIngredients);
+            }
             queryParams.push(searchParams.includeIngredients.length);
             paramIndex += 2;
         }
 
-        // Exclude specific ingredients
+        // Exclude specific ingredients with enhanced matching
         if (searchParams.excludeIngredients && searchParams.excludeIngredients.length > 0) {
-            whereConditions.push(`r."recipeId" NOT IN (
-                SELECT DISTINCT ri."recipeId"
-                FROM "recipeIngredients" ri
-                JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
-                WHERE i."name" ILIKE ANY($${paramIndex})
-            )`);
-            queryParams.push(searchParams.excludeIngredients.map(ing => `%${ing}%`));
+            if (searchParams.fuzzy) {
+                whereConditions.push(`r."recipeId" NOT IN (
+                    SELECT DISTINCT ri."recipeId"
+                    FROM "recipeIngredients" ri
+                    JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($${paramIndex}::text[]) AS exclude_ingredient
+                        WHERE similarity(i."name", exclude_ingredient) > 0.6
+                    )
+                )`);
+                queryParams.push(searchParams.excludeIngredients);
+            } else {
+                whereConditions.push(`r."recipeId" NOT IN (
+                    SELECT DISTINCT ri."recipeId"
+                    FROM "recipeIngredients" ri
+                    JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                    WHERE i."name" ILIKE ANY($${paramIndex})
+                )`);
+                queryParams.push(searchParams.excludeIngredients.map(ing => `%${ing}%`));
+            }
             paramIndex++;
         }
 
-        // Multiple cuisines
+        // Multiple cuisines with fuzzy matching
         if (searchParams.cuisine && searchParams.cuisine.length > 0) {
-            whereConditions.push(`r."cuisine" ILIKE ANY($${paramIndex})`);
-            queryParams.push(searchParams.cuisine.map(c => `%${c}%`));
+            if (searchParams.fuzzy) {
+                whereConditions.push(`EXISTS (
+                    SELECT 1 FROM unnest($${paramIndex}::text[]) AS search_cuisine
+                    WHERE similarity(r."cuisine", search_cuisine) > 0.5
+                )`);
+                queryParams.push(searchParams.cuisine);
+            } else {
+                whereConditions.push(`r."cuisine" ILIKE ANY($${paramIndex})`);
+                queryParams.push(searchParams.cuisine.map(c => `%${c}%`));
+            }
             paramIndex++;
         }
 
@@ -182,18 +265,33 @@ router.get('/recipes/advanced', async (req, res, next) => {
             paramIndex++;
         }
 
-        // Tags filter
+        // Tags filter with fuzzy matching
         if (searchParams.tags && searchParams.tags.length > 0) {
-            whereConditions.push(`r."recipeId" IN (
-                SELECT rt."recipeId"
-                FROM "recipeTags" rt
-                WHERE rt."tag" ILIKE ANY($${paramIndex})
-                GROUP BY rt."recipeId"
-                HAVING COUNT(DISTINCT rt."tag") >= $${paramIndex + 1}
-            )`);
-            queryParams.push(searchParams.tags.map(tag => `%${tag}%`));
-            queryParams.push(Math.min(searchParams.tags.length, 1)); // At least 1 tag match
-            paramIndex += 2;
+            if (searchParams.fuzzy) {
+                whereConditions.push(`r."recipeId" IN (
+                    SELECT rt."recipeId"
+                    FROM "recipeTags" rt
+                    WHERE EXISTS (
+                        SELECT 1 FROM unnest($${paramIndex}::text[]) AS search_tag
+                        WHERE similarity(rt."tag", search_tag) > 0.5
+                    )
+                    GROUP BY rt."recipeId"
+                    HAVING COUNT(DISTINCT rt."tag") >= 1
+                )`);
+                queryParams.push(searchParams.tags);
+            } else {
+                whereConditions.push(`r."recipeId" IN (
+                    SELECT rt."recipeId"
+                    FROM "recipeTags" rt
+                    WHERE rt."tag" ILIKE ANY($${paramIndex})
+                    GROUP BY rt."recipeId"
+                    HAVING COUNT(DISTINCT rt."tag") >= $${paramIndex + 1}
+                )`);
+                queryParams.push(searchParams.tags.map(tag => `%${tag}%`));
+                queryParams.push(Math.min(searchParams.tags.length, 1));
+                paramIndex++;
+            }
+            paramIndex++;
         }
 
         // Rating range
@@ -273,19 +371,14 @@ router.get('/recipes/advanced', async (req, res, next) => {
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
         const joinClause = joinConditions.join(' ');
 
-        // Build ORDER BY clause
+        // Enhanced ORDER BY clause with relevance scoring
         let orderBy = '';
         const sortOrder = searchParams.sortOrder.toUpperCase();
 
         switch (searchParams.sortBy) {
             case 'relevance':
-                // Use ts_rank for relevance when text search is present
                 if (searchParams.query) {
-                    orderBy = `ORDER BY 
-                        ts_rank(
-                            to_tsvector('english', r."title" || ' ' || COALESCE(r."description", '') || ' ' || r."instructions"),
-                            plainto_tsquery('english', $1)
-                        ) ${sortOrder}, r."createdAt" DESC`;
+                    orderBy = `ORDER BY relevance_score ${sortOrder}, r."createdAt" DESC`;
                 } else {
                     orderBy = `ORDER BY r."createdAt" DESC`;
                 }
@@ -328,6 +421,7 @@ router.get('/recipes/advanced', async (req, res, next) => {
 
         const searchQuery = `
             SELECT r.*, 
+                   ${selectFields.join(', ')},
                    COALESCE(
                        (SELECT json_agg(
                            json_build_object(
@@ -379,6 +473,15 @@ router.get('/recipes/advanced', async (req, res, next) => {
         `;
         const countResult = await db.query(countQuery, queryParams.slice(0, -2));
 
+        // Log search analytics
+        await logSearchAnalytics(
+            searchParams.query || 'advanced_filter',
+            userId,
+            results.rows.length,
+            'advanced_recipe',
+            searchParams
+        );
+
         res.json({
             success: true,
             data: {
@@ -392,9 +495,11 @@ router.get('/recipes/advanced', async (req, res, next) => {
                 filters: searchParams,
                 searchMetadata: {
                     hasTextSearch: !!searchParams.query,
-                    hasFilters: Object.keys(searchParams).length > 4, // More than basic params
+                    fuzzySearch: searchParams.fuzzy,
+                    hasFilters: Object.keys(searchParams).length > 4,
                     sortBy: searchParams.sortBy,
-                    sortOrder: searchParams.sortOrder
+                    sortOrder: searchParams.sortOrder,
+                    relevanceScoring: !!searchParams.query
                 }
             }
         });
@@ -404,66 +509,104 @@ router.get('/recipes/advanced', async (req, res, next) => {
 });
 
 /**
- * Get search suggestions based on partial query
+ * Enhanced search suggestions with popular searches and typo correction
  * GET /api/search/suggestions
  */
 router.get('/suggestions', async (req, res, next) => {
     try {
-        const { query, type = 'all', limit = 10 } = req.query;
+        const { query, type = 'all', limit = 10, includePopular = true } = req.query;
 
         if (!query || typeof query !== 'string' || query.length < 2) {
+            // Return popular searches if no query provided
+            if (includePopular === 'true') {
+                const popularSearches = await db.query(`
+                    SELECT "query", search_count, 'popular' as suggestion_type
+                    FROM "popularSearches"
+                    LIMIT $1
+                `, [Math.min(parseInt(limit as string) || 10, 20)]);
+
+                return res.json({
+                    success: true,
+                    data: {
+                        query: '',
+                        suggestions: {
+                            popular: popularSearches.rows
+                        }
+                    }
+                });
+            }
             throw new ClientError(400, 'Query must be at least 2 characters long');
         }
 
         const limitNum = Math.min(parseInt(limit as string) || 10, 20);
-        const suggestions = {};
+        const suggestions: any = {};
 
         if (type === 'all' || type === 'recipes') {
+            // Enhanced recipe suggestions with fuzzy matching
             const recipeSuggestions = await db.query(`
-                SELECT DISTINCT r."title", 'recipe' as type, r."recipeId" as id
+                SELECT DISTINCT r."title", 'recipe' as type, r."recipeId" as id,
+                       similarity(r."title", $1) as similarity_score
                 FROM "recipes" r
-                WHERE r."title" ILIKE $1
-                ORDER BY r."title"
-                LIMIT $2
-            `, [`%${query}%`, limitNum]);
+                WHERE similarity(r."title", $1) > 0.3 OR r."title" ILIKE $2
+                ORDER BY similarity_score DESC, r."title"
+                LIMIT $3
+            `, [query, `%${query}%`, limitNum]);
 
             suggestions.recipes = recipeSuggestions.rows;
         }
 
         if (type === 'all' || type === 'ingredients') {
+            // Enhanced ingredient suggestions with fuzzy matching
             const ingredientSuggestions = await db.query(`
-                SELECT DISTINCT i."name", 'ingredient' as type, i."ingredientId" as id
+                SELECT DISTINCT i."name", 'ingredient' as type, i."ingredientId" as id,
+                       similarity(i."name", $1) as similarity_score
                 FROM "ingredients" i
-                WHERE i."name" ILIKE $1
-                ORDER BY i."name"
-                LIMIT $2
-            `, [`%${query}%`, limitNum]);
+                WHERE similarity(i."name", $1) > 0.4 OR i."name" ILIKE $2
+                ORDER BY similarity_score DESC, i."name"
+                LIMIT $3
+            `, [query, `%${query}%`, limitNum]);
 
             suggestions.ingredients = ingredientSuggestions.rows;
         }
 
         if (type === 'all' || type === 'cuisines') {
             const cuisineSuggestions = await db.query(`
-                SELECT DISTINCT r."cuisine" as name, 'cuisine' as type
+                SELECT DISTINCT r."cuisine" as name, 'cuisine' as type,
+                       similarity(r."cuisine", $1) as similarity_score
                 FROM "recipes" r
-                WHERE r."cuisine" IS NOT NULL AND r."cuisine" ILIKE $1
-                ORDER BY r."cuisine"
-                LIMIT $2
-            `, [`%${query}%`, limitNum]);
+                WHERE r."cuisine" IS NOT NULL 
+                  AND (similarity(r."cuisine", $1) > 0.4 OR r."cuisine" ILIKE $2)
+                ORDER BY similarity_score DESC, r."cuisine"
+                LIMIT $3
+            `, [query, `%${query}%`, limitNum]);
 
             suggestions.cuisines = cuisineSuggestions.rows;
         }
 
         if (type === 'all' || type === 'tags') {
             const tagSuggestions = await db.query(`
-                SELECT DISTINCT rt."tag" as name, 'tag' as type
+                SELECT DISTINCT rt."tag" as name, 'tag' as type,
+                       similarity(rt."tag", $1) as similarity_score
                 FROM "recipeTags" rt
-                WHERE rt."tag" ILIKE $1
-                ORDER BY rt."tag"
-                LIMIT $2
-            `, [`%${query}%`, limitNum]);
+                WHERE similarity(rt."tag", $1) > 0.4 OR rt."tag" ILIKE $2
+                ORDER BY similarity_score DESC, rt."tag"
+                LIMIT $3
+            `, [query, `%${query}%`, limitNum]);
 
             suggestions.tags = tagSuggestions.rows;
+        }
+
+        // Include popular related searches
+        if (includePopular === 'true') {
+            const relatedPopular = await db.query(`
+                SELECT "query", search_count, 'popular' as suggestion_type
+                FROM "popularSearches"
+                WHERE similarity("query", $1) > 0.3
+                ORDER BY search_count DESC
+                LIMIT 5
+            `, [query]);
+
+            suggestions.popular = relatedPopular.rows;
         }
 
         res.json({
@@ -506,13 +649,14 @@ router.get('/trending', async (req, res, next) => {
 
         // Get trending ingredients
         const trendingIngredients = await db.query(`
-            SELECT i."ingredientId", i."name", i."category",
+            SELECT i."ingredientId", i."name", ic."name" as category,
                    COUNT(DISTINCT r."recipeId") as recipe_count
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
             JOIN "recipes" r ON ri."recipeId" = r."recipeId"
             WHERE r."createdAt" >= NOW() - INTERVAL '${daysNum} days'
-            GROUP BY i."ingredientId", i."name", i."category"
+            GROUP BY i."ingredientId", i."name", ic."name"
             ORDER BY recipe_count DESC
             LIMIT $1
         `, [limitNum]);
@@ -546,69 +690,130 @@ router.get('/trending', async (req, res, next) => {
     }
 });
 
-// Helper functions for unified search
-async function searchRecipes(params: any) {
+// Enhanced helper functions with full-text search
+async function searchRecipesEnhanced(params: any) {
+    let whereConditions = ['1=1'];
+    let queryParams = [];
+    let paramIndex = 1;
+    let relevanceScore = '1 as relevance_score'; // Default relevance score
+
+    // Only add search conditions if query is provided
+    if (params.query && params.query.trim()) {
+        if (params.fuzzy) {
+            whereConditions.push(`(
+                similarity(r."title", $${paramIndex}) > 0.3 OR
+                similarity(r."description", $${paramIndex}) > 0.2 OR
+                r."searchVector" @@ plainto_tsquery('english', $${paramIndex})
+            )`);
+            relevanceScore = `GREATEST(
+                similarity(r."title", $${paramIndex}),
+                similarity(r."description", $${paramIndex}),
+                ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex}))
+              ) as relevance_score`;
+            queryParams.push(params.query);
+            paramIndex++;
+        } else {
+            whereConditions.push(`(
+                r."searchVector" @@ plainto_tsquery('english', $${paramIndex}) OR
+                r."title" ILIKE $${paramIndex + 1} OR 
+                r."description" ILIKE $${paramIndex + 1}
+            )`);
+            relevanceScore = `ts_rank(r."searchVector", plainto_tsquery('english', $${paramIndex})) as relevance_score`;
+            queryParams.push(params.query, `%${params.query}%`);
+            paramIndex += 2;
+        }
+    }
+
     const query = `
         SELECT r."recipeId", r."title", r."description", r."cuisine", r."difficulty",
                'recipe' as result_type,
-               COALESCE(AVG(rr."rating"), 0) as avg_rating
+               COALESCE(AVG(rr."rating"), 0) as avg_rating,
+               ${relevanceScore}
         FROM "recipes" r
         LEFT JOIN "recipeRatings" rr ON r."recipeId" = rr."recipeId"
-        WHERE r."title" ILIKE $1 OR r."description" ILIKE $1
+        WHERE ${whereConditions.join(' AND ')}
         GROUP BY r."recipeId", r."title", r."description", r."cuisine", r."difficulty"
-        ORDER BY avg_rating DESC
-        LIMIT $2 OFFSET $3
+        ORDER BY relevance_score DESC, avg_rating DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    const result = await db.query(query, [
-        `%${params.query}%`,
-        Math.min(params.limit, 10),
-        params.offset
-    ]);
+    queryParams.push(Math.min(params.limit, 10), params.offset);
 
+    const result = await db.query(query, queryParams);
     return result.rows;
 }
 
-async function searchIngredients(params: any) {
+async function searchIngredientsEnhanced(params: any) {
+    let whereConditions = ['1=1'];
+    let queryParams = [];
+    let paramIndex = 1;
+    let relevanceScore = '1 as relevance_score'; // Default relevance score
+
+    // Only add search conditions if query is provided
+    if (params.query && params.query.trim()) {
+        if (params.fuzzy) {
+            whereConditions.push(`similarity(i."name", $${paramIndex}) > 0.4`);
+            relevanceScore = `similarity(i."name", $${paramIndex}) as relevance_score`;
+            queryParams.push(params.query);
+            paramIndex++;
+        } else {
+            whereConditions.push(`(
+                to_tsvector('english', i."name") @@ plainto_tsquery('english', $${paramIndex}) OR
+                i."name" ILIKE $${paramIndex + 1}
+            )`);
+            relevanceScore = `ts_rank(to_tsvector('english', i."name"), plainto_tsquery('english', $${paramIndex})) as relevance_score`;
+            queryParams.push(params.query, `%${params.query}%`);
+            paramIndex += 2;
+        }
+    }
+
     const query = `
-        SELECT i."ingredientId", i."name", i."category",
+        SELECT i."ingredientId", i."name", ic."name" as category,
                'ingredient' as result_type,
-               COUNT(DISTINCT ri."recipeId") as usage_count
+               COUNT(DISTINCT ri."recipeId") as usage_count,
+               ${relevanceScore}
         FROM "ingredients" i
+        LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
         LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
-        WHERE i."name" ILIKE $1
-        GROUP BY i."ingredientId", i."name", i."category"
-        ORDER BY usage_count DESC
-        LIMIT $2 OFFSET $3
+        WHERE ${whereConditions.join(' AND ')}
+        GROUP BY i."ingredientId", i."name", ic."name"
+        ORDER BY relevance_score DESC, usage_count DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    const result = await db.query(query, [
-        `%${params.query}%`,
-        Math.min(params.limit, 10),
-        params.offset
-    ]);
+    queryParams.push(Math.min(params.limit, 10), params.offset);
 
+    const result = await db.query(query, queryParams);
     return result.rows;
 }
 
 async function searchUsers(params: any) {
+    let whereCondition = '1=1';
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Only add search condition if query is provided
+    if (params.query && params.query.trim()) {
+        whereCondition = `u."name" ILIKE $${paramIndex}`;
+        queryParams.push(`%${params.query}%`);
+        paramIndex++;
+    }
+
     const query = `
         SELECT u."userId", u."name", u."email",
                'user' as result_type,
                COUNT(DISTINCT r."recipeId") as recipe_count
         FROM "users" u
         LEFT JOIN "recipes" r ON u."userId" = r."userId"
-        WHERE u."name" ILIKE $1
+        WHERE ${whereCondition}
         GROUP BY u."userId", u."name", u."email"
         ORDER BY recipe_count DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
 
-    const result = await db.query(query, [
-        `%${params.query}%`,
-        Math.min(params.limit, 5),
-        params.offset
-    ]);
+    queryParams.push(Math.min(params.limit, 5), params.offset);
+
+    const result = await db.query(query, queryParams);
 
     // Remove sensitive information
     return result.rows.map(user => ({

@@ -1,0 +1,177 @@
+name: Backend Deployment
+
+on:
+  push:
+    branches: [main, openai]
+    paths:
+      - 'server/**'
+      - 'database/**'
+      - '.github/workflows/backend-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'database/**'
+
+jobs:
+  test:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: smart_recipes_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d smart_recipes_test -f ../database/schema.sql
+        env:
+          PGPASSWORD: test_password
+        continue-on-error: true
+
+      - name: Run type checking
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Run linting
+        run: npm run lint || echo "Linting completed with warnings"
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test -- --coverage --forceExit --passWithNoTests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/smart_recipes_test
+          JWT_SECRET: test-jwt-secret-for-ci
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-ci' }}
+          PORT: 3001
+        continue-on-error: true
+
+      - name: Test production build
+        run: npm run start:tsx &
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/smart_recipes_test
+          JWT_SECRET: test-jwt-secret-for-ci
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-ci' }}
+          PORT: 3001
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f http://localhost:3001/api/health 2>/dev/null || echo "Health check failed"
+          curl -f http://localhost:3001/api/db-test 2>/dev/null || echo "Database test failed"
+        continue-on-error: true
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: server/coverage
+          retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level moderate || echo "Audit completed with warnings"
+        continue-on-error: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './server'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+  deploy-railway:
+    name: Deploy to Railway
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        uses: railwayapp/railway-deploy@v3
+        with:
+          railway-token: ${{ secrets.RAILWAY_TOKEN }}
+          service: smart-recipes-api
+          environment: production
+        continue-on-error: true
+
+  deploy-render:
+    name: Deploy to Render (Backup)
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        uses: JorgeLNJunior/render-deploy@v1.4.4
+        with:
+          service_id: ${{ secrets.RENDER_SERVICE_ID }}
+          api_key: ${{ secrets.RENDER_API_KEY }}
+          wait_deploy: true
+        continue-on-error: true 

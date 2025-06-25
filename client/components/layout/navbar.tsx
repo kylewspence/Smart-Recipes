@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserCircle, Menu } from "lucide-react";
+import { UserCircle, Menu, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
     const isLoggedIn = false; // This will come from your auth context
 
     return (
@@ -30,12 +31,38 @@ export function Navbar() {
                     >
                         Recipes
                     </Link>
-                    <Link
-                        href="/preferences"
-                        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        Preferences
-                    </Link>
+
+                    {/* Preferences Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsPreferencesOpen(!isPreferencesOpen)}
+                            className="flex items-center space-x-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <span>Preferences</span>
+                            <ChevronDown className="h-3 w-3" />
+                        </button>
+
+                        {isPreferencesOpen && (
+                            <div className="absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-md shadow-lg z-50">
+                                <div className="py-1">
+                                    <Link
+                                        href="/preferences"
+                                        className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        onClick={() => setIsPreferencesOpen(false)}
+                                    >
+                                        Setup Preferences
+                                    </Link>
+                                    <Link
+                                        href="/preferences/manage"
+                                        className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        onClick={() => setIsPreferencesOpen(false)}
+                                    >
+                                        Manage Preferences
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     <ThemeToggle />
 
@@ -89,7 +116,13 @@ export function Navbar() {
                         href="/preferences"
                         className="block py-2 text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
                     >
-                        Preferences
+                        Setup Preferences
+                    </Link>
+                    <Link
+                        href="/preferences/manage"
+                        className="block py-2 text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        Manage Preferences
                     </Link>
                     {isLoggedIn ? (
                         <Link

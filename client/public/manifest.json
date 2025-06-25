@@ -1,0 +1,139 @@
+{
+    "name": "Smart Recipes - AI-Powered Recipe App",
+    "short_name": "Smart Recipes",
+    "description": "Get personalized recipes based on your preferences and ingredients using AI",
+    "theme_color": "#3b82f6",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "start_url": "/",
+    "categories": [
+        "food",
+        "lifestyle",
+        "productivity"
+    ],
+    "lang": "en",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshots/mobile-home.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Home screen showing recipe recommendations"
+        },
+        {
+            "src": "/screenshots/mobile-search.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Advanced recipe search with filters"
+        },
+        {
+            "src": "/screenshots/desktop-dashboard.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "User dashboard with cooking statistics"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Generate Recipe",
+            "short_name": "Generate",
+            "description": "Create a new AI-generated recipe",
+            "url": "/recipe-generator",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-generate.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Search Recipes",
+            "short_name": "Search",
+            "description": "Search and filter recipes",
+            "url": "/search",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-search.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Cooking Timer",
+            "short_name": "Timer",
+            "description": "Start cooking timers",
+            "url": "/cooking-timer",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-timer.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "prefer_related_applications": false,
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    }
+}
