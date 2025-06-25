@@ -1,7 +1,12 @@
 export interface User {
+    id?: number;
     userId: number;
     email: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    isVerified?: boolean;
     isGuest?: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -30,7 +35,7 @@ export interface AuthTokens {
 
 export interface AuthState {
     user: User | null;
-    tokens: AuthTokens | null;
+    token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;

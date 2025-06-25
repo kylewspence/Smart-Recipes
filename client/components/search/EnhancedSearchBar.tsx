@@ -53,7 +53,12 @@ export default function EnhancedSearchBar({
     // Load trending content on mount
     useEffect(() => {
         if (showTrending) {
-            searchService.getTrending({ days: 7, limit: 5 }).then(setTrending);
+            searchService.getTrending({ days: 7, limit: 5 })
+                .then(setTrending)
+                .catch((error) => {
+                    console.warn('Failed to load trending content:', error);
+                    // Fail silently - trending content is not critical
+                });
         }
     }, [showTrending]);
 
@@ -69,8 +74,11 @@ export default function EnhancedSearchBar({
                 setSuggestions(result.suggestions);
                 setShowSuggestions(true);
                 setIsLoading(false);
-            }).catch(() => {
+            }).catch((error) => {
+                console.warn('Failed to load search suggestions:', error);
                 setIsLoading(false);
+                setSuggestions({});
+                setShowSuggestions(false);
             });
         } else if (debouncedQuery.length === 0) {
             // Show popular searches when no query
@@ -80,6 +88,9 @@ export default function EnhancedSearchBar({
             }).then(result => {
                 setSuggestions(result.suggestions);
                 setShowSuggestions(true);
+            }).catch((error) => {
+                console.warn('Failed to load popular searches:', error);
+                // Fail silently - popular searches are not critical
             });
         } else {
             setSuggestions({});

@@ -65,9 +65,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
-        {/* Favicon and app icons */}
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* Favicon and app icons - temporarily removed until icons are created */}
+        {/* <link rel="icon" href="/favicon.ico" /> */}
+        {/* <link rel="apple-touch-icon" href="/icons/icon-192x192.png" /> */}
 
         {/* Prevent flash of unstyled content */}
         <script

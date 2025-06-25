@@ -259,30 +259,22 @@ export default function QuickActions({
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <MagicCard
-                                className="p-4 cursor-pointer hover:scale-105 transition-transform group"
+                            <div
                                 onClick={() => handleActionClick(action)}
-                                gradientColor={action.gradient.match(/#[a-fA-F0-9]{6}/)?.[0] || '#3b82f6'}
-                                gradientOpacity={0.1}
+                                className="cursor-pointer"
                             >
-                                <div className="flex items-center space-x-3">
-                                    <div
-                                        className="p-2 rounded-lg"
-                                        style={{ background: action.gradient }}
-                                    >
-                                        <action.icon className="w-5 h-5 text-white" />
+                                <MagicCard
+                                    className="p-6 text-center transition-transform hover:scale-105"
+                                    gradientColor={action.gradient.match(/#[a-fA-F0-9]{6}/)?.[0] || '#3b82f6'}
+                                    gradientOpacity={0.1}
+                                >
+                                    <div className="text-4xl mb-4">
+                                        <action.icon className="w-8 h-8 text-white" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                                            {action.title}
-                                        </h4>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                            {action.description}
-                                        </p>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors" />
-                                </div>
-                            </MagicCard>
+                                    <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
+                                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                                </MagicCard>
+                            </div>
                         </motion.div>
                     ))}
                 </div>

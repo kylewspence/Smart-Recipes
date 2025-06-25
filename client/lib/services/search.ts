@@ -100,23 +100,37 @@ export class SearchService {
     private async makeRequest<T>(endpoint: string, params: URLSearchParams): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}?${params.toString()}`;
 
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Add timeout and other fetch options for better reliability
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+            });
 
-        if (!response.ok) {
-            throw new Error(`Search request failed: ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Search request failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message || 'Search failed');
+            }
+
+            return result.data;
+        } catch (error) {
+            // Enhanced error handling
+            if (error instanceof Error) {
+                if (error.name === 'TimeoutError') {
+                    throw new Error('Search request timed out. Please try again.');
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Unable to connect to search service. Please check your connection.');
+                }
+            }
+            throw error;
         }
-
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.message || 'Search failed');
-        }
-
-        return result.data;
     }
 
     /**

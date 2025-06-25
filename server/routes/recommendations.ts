@@ -47,6 +47,54 @@ const ingredientBasedRecommendationsSchema = z.object({
 });
 
 /**
+ * Get quick recommendations (no auth required)
+ * GET /api/recommendations/quick
+ */
+router.get('/quick', async (req, res, next) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit as string) || 6, 20);
+
+        // Get a mix of popular and recent recipes for quick recommendations
+        const query = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings,
+                COALESCE(AVG(rr.rating), 0) as avg_rating,
+                COUNT(sr."userId") as save_count
+            FROM recipes r
+            LEFT JOIN "savedRecipes" sr ON r."recipeId" = sr."recipeId"
+            LEFT JOIN "recipeRatings" rr ON r."recipeId" = rr."recipeId"
+            GROUP BY r."recipeId", r.title, r.description, r.cuisine, r.difficulty, r."cookingTime", r.servings
+            ORDER BY (COUNT(sr."userId") * 0.6 + COALESCE(AVG(rr.rating), 0) * 0.4) DESC, r."createdAt" DESC
+            LIMIT $1
+        `;
+
+        const result = await pool.query(query, [limit]);
+
+        res.json({
+            success: true,
+            data: {
+                recommendations: result.rows,
+                metadata: {
+                    strategy: 'popular-recent',
+                    limit,
+                    count: result.rows.length,
+                    requiresAuth: false
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Quick recommendations error:', err);
+        next(err);
+    }
+});
+
+/**
  * Get trending recipes based on recent activity
  * GET /api/recommendations/trending
  */

@@ -649,13 +649,14 @@ router.get('/trending', async (req, res, next) => {
 
         // Get trending ingredients
         const trendingIngredients = await db.query(`
-            SELECT i."ingredientId", i."name", i."category",
+            SELECT i."ingredientId", i."name", ic."name" as category,
                    COUNT(DISTINCT r."recipeId") as recipe_count
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
             JOIN "recipes" r ON ri."recipeId" = r."recipeId"
             WHERE r."createdAt" >= NOW() - INTERVAL '${daysNum} days'
-            GROUP BY i."ingredientId", i."name", i."category"
+            GROUP BY i."ingredientId", i."name", ic."name"
             ORDER BY recipe_count DESC
             LIMIT $1
         `, [limitNum]);

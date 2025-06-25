@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRightIcon, FireIcon, SparklesIcon, SunIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useRecommendations } from '../../lib/hooks/useRecommendations';
 import RecipeCard from '../recipe/RecipeCard';
-import { MagicCard, ShimmerButton, AnimatedList, BlurFade } from '../magicui';
+import { MagicCard, ShimmerButton, BlurFade } from '../magicui';
 
 interface RecommendationsSectionProps {
     userId?: number;
@@ -222,13 +222,13 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                                 </MagicCard>
                             </BlurFade>
                         )}
-                        <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {personalizedRecommendations.recommendations.map((recipe, index) => (
                                 <BlurFade key={recipe.recipeId} delay={0.2 + index * 0.1}>
                                     <RecipeCard recipe={recipe} variant="default" />
                                 </BlurFade>
                             ))}
-                        </AnimatedList>
+                        </div>
                     </div>
                 );
 
@@ -239,13 +239,13 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                     return <EmptyState title="No trending recipes" description="Check back later for the latest trending recipes!" />;
                 }
                 return (
-                    <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {trendingRecipes.trendingRecipes.map((recipe, index) => (
                             <BlurFade key={recipe.recipeId || recipe.id} delay={0.1 + index * 0.1}>
                                 <RecipeCard recipe={recipe} variant="default" />
                             </BlurFade>
                         ))}
-                    </AnimatedList>
+                    </div>
                 );
 
             case 'seasonal':
@@ -269,13 +269,13 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                                 </div>
                             </MagicCard>
                         </BlurFade>
-                        <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {seasonalRecommendations.seasonalRecipes.map((recipe, index) => (
                                 <BlurFade key={recipe.recipeId || recipe.id} delay={0.2 + index * 0.1}>
                                     <RecipeCard recipe={recipe} variant="default" />
                                 </BlurFade>
                             ))}
-                        </AnimatedList>
+                        </div>
                     </div>
                 );
 
@@ -287,13 +287,13 @@ export const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                     return <EmptyState title="No recommendations available" description="We're working on finding great recipes for you!" />;
                 }
                 return (
-                    <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {quickRecommendations.map((recipe, index) => (
                             <BlurFade key={recipe.recipeId || recipe.id} delay={0.1 + index * 0.1}>
                                 <RecipeCard recipe={recipe} variant="default" />
                             </BlurFade>
                         ))}
-                    </AnimatedList>
+                    </div>
                 );
         }
     };

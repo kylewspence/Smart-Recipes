@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
-import { MagicCard, ShimmerButton, BlurFade, SimpleAnimatedList } from "@/components/magicui";
+import { MagicCard, ShimmerButton, BlurFade } from "@/components/magicui";
 import EnhancedSearchBar from "@/components/search/EnhancedSearchBar";
 import { RecommendationsSection } from "@/components/recommendations";
 import { responsive } from "@/lib/utils/responsive";
@@ -83,19 +83,12 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Recommendations Section */}
-                <section className="bg-background py-16">
-                    <div className={responsive.container.section}>
-                        <RecommendationsSection
-                            showQuick={true}
-                            showTrending={true}
-                            showSeasonal={true}
-                            showPersonalized={false}
-                            limit={6}
-                            className="max-w-7xl mx-auto"
-                        />
-                    </div>
-                </section>
+                {/* Recommendations Section - Temporarily disabled */}
+                {/* <RecommendationsSection /> */}
+
+                <div className="text-center py-8">
+                    <p className="text-muted-foreground">Personalized recommendations will appear here based on your preferences.</p>
+                </div>
 
                 {/* Quick Actions Section */}
                 <section className="bg-gradient-to-b from-background to-muted/30 py-16">
@@ -178,7 +171,7 @@ export default function Home() {
                             </BlurFade>
                         </div>
                         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-                            <SimpleAnimatedList className={responsive.grid.features}>
+                            <div className={responsive.grid.features}>
                                 <MagicCard className="p-6" gradientColor="#f97316" gradientOpacity={0.1}>
                                     <div className="flex flex-col h-full">
                                         <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
@@ -198,9 +191,9 @@ export default function Home() {
                                     <div className="flex flex-col h-full">
                                         <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 flex-none text-primary">
-                                                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
-                                                <path d="M9 18h6" />
-                                                <path d="M10 22h4" />
+                                                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                                                <path d="M9 18h6"></path>
+                                                <path d="M10 22h4"></path>
                                             </svg>
                                             Advanced Search
                                         </dt>
@@ -215,8 +208,8 @@ export default function Home() {
                                     <div className="flex flex-col h-full">
                                         <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 flex-none text-primary">
-                                                <path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l6.29-6.29c.94-.94.94-2.48 0-3.42L11.71 2.71c-.94-.94-2.48-.94-3.42 0L5 6" />
-                                                <path d="M7 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                                                <path d="M9 5H2v7l6.29 6.29c.94.94 2.48.94 3.42 0l6.29-6.29c.94-.94.94-2.48 0-3.42L11.71 2.71c-.94-.94-2.48-.94-3.42 0L5 6"></path>
+                                                <path d="M7 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path>
                                             </svg>
                                             Dietary Flexibility
                                         </dt>
@@ -227,7 +220,7 @@ export default function Home() {
                                         </dd>
                                     </div>
                                 </MagicCard>
-                            </SimpleAnimatedList>
+                            </div>
                         </div>
                     </div>
                 </section>
