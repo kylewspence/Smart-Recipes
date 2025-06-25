@@ -13,6 +13,7 @@ import migrationsRoutes from './routes/migrations';
 import databaseRoutes from './routes/database';
 import securityRoutes from './routes/security';
 import privacyRoutes from './routes/privacy';
+import analyticsRoutes from './routes/analytics';
 import db from './db/db';
 
 // Security and Rate Limiting Middleware
@@ -142,6 +143,9 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/ingredients', ingredientsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+
+// Analytics routes with standard rate limiting
+app.use('/api/analytics', analyticsRoutes);
 
 // Future: AI recipe generation routes will use AI-specific rate limiting
 // app.use('/api/ai', rateLimiters.ai, slowDownLimiters.ai, aiRoutes);
