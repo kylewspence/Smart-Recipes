@@ -11,6 +11,8 @@ import searchRoutes from './routes/search';
 import recommendationsRoutes from './routes/recommendations';
 import migrationsRoutes from './routes/migrations';
 import databaseRoutes from './routes/database';
+import securityRoutes from './routes/security';
+import privacyRoutes from './routes/privacy';
 import db from './db/db';
 
 // Security and Rate Limiting Middleware
@@ -127,6 +129,12 @@ app.use('/api/search', rateLimiters.search, searchRoutes);
 // Admin/Database routes with strict rate limiting
 app.use('/api/database', rateLimiters.admin, databaseRoutes);
 app.use('/api/migrations', rateLimiters.admin, migrationsRoutes);
+
+// Security monitoring routes with admin rate limiting
+app.use('/api/security', rateLimiters.admin, securityRoutes);
+
+// Privacy and GDPR compliance routes with admin rate limiting
+app.use('/api/privacy', rateLimiters.admin, privacyRoutes);
 
 // Regular API routes with standard rate limiting (already applied globally)
 app.use('/api/users', userRoutes);
