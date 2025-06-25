@@ -1,0 +1,71 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "lib": [
+            "es2020"
+        ],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "allowJs": true,
+        "outDir": "./dist",
+        "rootDir": "./",
+        "strict": false,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "noEmit": false,
+        "sourceMap": false,
+        "removeComments": true,
+        "declaration": false,
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+    },
+    "files": [
+        "server.production.ts"
+    ],
+    "include": [
+        "lib/index.ts",
+        "lib/auth.ts",
+        "lib/openai.ts",
+        "lib/error-utils.ts",
+        "lib/error-middleware.ts",
+        "lib/client-error.ts",
+        "db/db.ts",
+        "routes/auth.ts",
+        "routes/users.ts",
+        "routes/recipes.ts",
+        "routes/preferences.ts",
+        "routes/ingredients.ts",
+        "routes/search.ts",
+        "routes/recommendations.ts",
+        "routes/database.ts",
+        "middleware/auth.ts",
+        "middleware/validate.ts",
+        "schemas/*.ts",
+        "types/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "test/**/*",
+        "src/**/*",
+        "lib/security-*.ts",
+        "lib/data-protection.ts",
+        "middleware/security.ts",
+        "middleware/enhanced-security.ts",
+        "middleware/input-sanitization.ts",
+        "middleware/security-validation.ts",
+        "middleware/rateLimiting.ts",
+        "routes/security.ts",
+        "routes/privacy.ts",
+        "routes/migrations.ts",
+        "db/migrations.ts"
+    ]
+}

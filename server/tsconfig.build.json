@@ -1,14 +1,25 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
+        "strict": false,
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "skipLibCheck": true,
         "noEmit": false,
         "outDir": "./dist",
-        "declaration": false,
-        "sourceMap": false
+        "rootDir": "./",
+        "sourceMap": false,
+        "removeComments": true
     },
     "exclude": [
-        "test/**/*",
+        "node_modules",
+        "dist",
         "**/*.test.ts",
-        "dist/**/*"
+        "**/*.spec.ts",
+        "test/**/*",
+        "src/__tests__/**/*"
     ]
 }

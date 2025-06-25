@@ -2,11 +2,18 @@
   "name": "smart-recipes-server",
   "version": "1.0.0",
   "description": "Backend server for Smart Recipes app",
-  "main": "dist/server.js",
+  "main": "dist/server.production.js",
   "scripts": {
     "dev": "tsx watch server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.production.json",
+    "build:simple": "mkdir -p dist && cp -r . dist/ && cd dist && npm install --production",
+    "build:dev": "tsc -p tsconfig.build.json",
+    "start": "cd dist && node server.production.js",
+    "start:tsx": "tsx server.production.ts",
+    "start:prod": "NODE_ENV=production npm run start:tsx",
+    "postbuild": "cp package*.json dist/ && cd dist && npm install --production",
+    "clean": "rm -rf dist",
+    "build:clean": "npm run clean && npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -31,7 +38,8 @@
     "pg": "^8.11.3",
     "rate-limit-redis": "^4.2.1",
     "winston": "^3.11.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "tsx": "^4.6.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -49,7 +57,6 @@
     "jest": "^29.7.0",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.1",
-    "tsx": "^4.6.2",
     "typescript": "^5.3.3"
   },
   "keywords": [
@@ -60,5 +67,9 @@
     "postgresql"
   ],
   "author": "Smart Recipes Team",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
 }
