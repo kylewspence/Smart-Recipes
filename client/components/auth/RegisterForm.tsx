@@ -130,7 +130,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-8">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
                         <User className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -171,7 +171,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 autoComplete="given-name"
                                 className={`
                   block w-full pl-10 pr-3 py-3 border rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   transition-all duration-200 ease-in-out
                   ${errors.firstName
                                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -209,7 +209,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 autoComplete="family-name"
                                 className={`
                   block w-full pl-10 pr-3 py-3 border rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   transition-all duration-200 ease-in-out
                   ${errors.lastName
                                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -247,7 +247,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 autoComplete="email"
                                 className={`
                   block w-full pl-10 pr-3 py-3 border rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   transition-all duration-200 ease-in-out
                   ${errors.email
                                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -255,7 +255,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                     }
                   text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
                 `}
-                                placeholder="john@example.com"
+                                placeholder="Enter your email"
                                 disabled={isFormLoading}
                             />
                         </div>
@@ -285,7 +285,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 autoComplete="new-password"
                                 className={`
                   block w-full pl-10 pr-12 py-3 border rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   transition-all duration-200 ease-in-out
                   ${errors.password
                                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -359,7 +359,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 autoComplete="new-password"
                                 className={`
                   block w-full pl-10 pr-12 py-3 border rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   transition-all duration-200 ease-in-out
                   ${errors.confirmPassword
                                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
@@ -398,7 +398,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                     {...register('terms')}
                                     id="terms"
                                     type="checkbox"
-                                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                     disabled={isFormLoading}
                                 />
                             </div>
@@ -407,7 +407,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                     I agree to the{' '}
                                     <Link
                                         href="/terms"
-                                        className="text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"
+                                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                                         target="_blank"
                                     >
                                         Terms of Service
@@ -415,7 +415,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                     {' '}and{' '}
                                     <Link
                                         href="/privacy"
-                                        className="text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"
+                                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                                         target="_blank"
                                     >
                                         Privacy Policy
@@ -437,10 +437,10 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                         className={`
               w-full flex justify-center items-center py-3 px-4 border border-transparent 
               rounded-xl text-sm font-medium text-white transition-all duration-200 ease-in-out
-              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
               ${isFormLoading
                                 ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 transform hover:scale-[1.02] active:scale-[0.98]'
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transform hover:scale-[1.02] active:scale-[0.98]'
                             }
             `}
                     >
@@ -450,10 +450,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                 Creating Account...
                             </>
                         ) : (
-                            <>
-                                <Check className="w-5 h-5 mr-2" />
-                                Create Account
-                            </>
+                            'Create Account'
                         )}
                     </button>
                 </form>
@@ -463,8 +460,8 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                         Already have an account?{' '}
                         <Link
-                            href="/auth/login"
-                            className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                            href="/login"
+                            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                         >
                             Sign in here
                         </Link>

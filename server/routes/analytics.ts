@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db/db';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { z } from 'zod';
 
 const router = Router();
@@ -95,10 +95,10 @@ router.post('/', async (req, res) => {
 });
 
 // Get analytics dashboard data (protected route)
-router.get('/dashboard', authMiddleware, async (req, res) => {
+router.get('/dashboard', authenticate, async (req, res) => {
     try {
         // Only allow admin users to view analytics
-        const user = await db.query('SELECT role FROM users WHERE id = $1', [req.userId]);
+        const user = await db.query('SELECT role FROM users WHERE id = $1', [req.user?.userId]);
         if (!user.rows[0] || user.rows[0].role !== 'admin') {
             return res.status(403).json({ error: 'Admin access required' });
         }
@@ -213,9 +213,9 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 });
 
 // Get user analytics (for their own data)
-router.get('/user', authMiddleware, async (req, res) => {
+router.get('/user', authenticate, async (req, res) => {
     try {
-        const userId = req.userId;
+        const userId = req.user?.userId;
 
         const [userEvents, userPageviews, userPerformance] = await Promise.all([
             // User's events (last 30 days)
@@ -272,7 +272,7 @@ router.get('/health', async (req, res) => {
         console.error('Analytics health check failed:', error);
         res.status(500).json({
             status: 'unhealthy',
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
             timestamp: new Date().toISOString(),
         });
     }

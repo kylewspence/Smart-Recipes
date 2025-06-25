@@ -93,7 +93,7 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
         setError(null);
 
         try {
-            await preferencesService.createUserPreferences(user.userId, formData);
+            await preferencesService.createUserPreferences(user.userId.toString(), formData);
 
             // Mark onboarding as complete in local storage
             localStorage.setItem('onboarding_completed', 'true');
@@ -170,15 +170,15 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
                 </div>
 
                 {/* Progress Bar */}
-                <div className="max-w-4xl mx-auto mb-8">
-                    <div className="flex items-center justify-between">
+                <div className="max-w-4xl mx-auto mb-12">
+                    <div className="flex items-center justify-center">
                         {steps.map((step, index) => (
-                            <div key={step.id} className="flex items-center flex-1">
+                            <div key={step.id} className="flex items-center">
                                 {/* Step Circle */}
-                                <div className="relative">
+                                <div className="relative flex flex-col items-center">
                                     <div className={`
-                                        w-10 h-10 rounded-full flex items-center justify-center
-                                        transition-all duration-300 relative z-10
+                                        w-12 h-12 rounded-full flex items-center justify-center
+                                        transition-all duration-300 relative z-10 mb-4
                                         ${index < currentStep
                                             ? 'bg-green-500 text-white'
                                             : index === currentStep
@@ -187,21 +187,21 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
                                         }
                                     `}>
                                         {index < currentStep ? (
-                                            <Check className="w-5 h-5" />
+                                            <Check className="w-6 h-6" />
                                         ) : (
                                             <span className="text-sm font-medium">{index + 1}</span>
                                         )}
                                     </div>
 
                                     {/* Step Info */}
-                                    <div className="absolute top-12 left-1/2 transform -translate-x-1/2 text-center min-w-max">
-                                        <p className={`text-sm font-medium ${index <= currentStep
-                                                ? 'text-gray-900 dark:text-white'
-                                                : 'text-gray-500 dark:text-gray-400'
+                                    <div className="text-center w-32">
+                                        <p className={`text-sm font-medium mb-1 ${index <= currentStep
+                                            ? 'text-gray-900 dark:text-white'
+                                            : 'text-gray-500 dark:text-gray-400'
                                             }`}>
                                             {step.title}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
                                             {step.description}
                                         </p>
                                     </div>
@@ -210,7 +210,7 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
                                 {/* Progress Line */}
                                 {index < steps.length - 1 && (
                                     <div className={`
-                                        flex-1 h-1 mx-4 rounded transition-all duration-300
+                                        w-16 h-1 mx-6 rounded transition-all duration-300
                                         ${index < currentStep
                                             ? 'bg-green-500'
                                             : 'bg-gray-200 dark:bg-gray-700'
