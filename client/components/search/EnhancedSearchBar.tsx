@@ -231,10 +231,10 @@ export default function EnhancedSearchBar({
 
             {/* Filter Panel */}
             {showFilterPanel && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-40 p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Fuzzy Search Toggle */}
-                        <div>
+                        <div className="col-span-1 sm:col-span-2 lg:col-span-1">
                             <label className="flex items-center space-x-2">
                                 <input
                                     type="checkbox"
@@ -250,7 +250,7 @@ export default function EnhancedSearchBar({
                         {/* Cuisine Filter */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Cuisine</label>
-                            <div className="space-y-1">
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
                                 {['Italian', 'Mexican', 'Asian', 'Indian', 'Mediterranean'].map(cuisine => (
                                     <label key={cuisine} className="flex items-center space-x-2">
                                         <input
@@ -292,7 +292,7 @@ export default function EnhancedSearchBar({
                                     ...prev,
                                     maxCookingTime: e.target.value ? parseInt(e.target.value) : undefined
                                 }))}
-                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                             >
                                 <option value="">Any time</option>
                                 <option value="15">15 minutes</option>
@@ -303,7 +303,7 @@ export default function EnhancedSearchBar({
                         </div>
                     </div>
 
-                    <div className="flex justify-end mt-4 space-x-2">
+                    <div className="flex flex-col sm:flex-row justify-end mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
                         <button
                             onClick={() => setFilters({
                                 fuzzy: true,
@@ -312,7 +312,7 @@ export default function EnhancedSearchBar({
                                 maxCookingTime: undefined,
                                 spiceLevel: []
                             })}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                            className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors rounded-md border border-gray-300 hover:bg-gray-50"
                         >
                             Clear Filters
                         </button>
@@ -330,7 +330,7 @@ export default function EnhancedSearchBar({
             {showSuggestions && (
                 <div
                     ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-60 max-h-96 overflow-y-auto"
                 >
                     {isLoading ? (
                         <div className="px-4 py-8 text-center text-gray-500">

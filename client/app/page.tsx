@@ -48,9 +48,9 @@ export default function Home() {
                                 </p>
                             </BlurFade>
 
-                            {/* Enhanced Search Bar */}
+                            {/* Enhanced Search Bar with extra spacing */}
                             <BlurFade delay={0.5}>
-                                <div className="mt-8 max-w-2xl mx-auto">
+                                <div className="mt-8 max-w-2xl mx-auto mb-32">
                                     <EnhancedSearchBar
                                         onSearch={handleSearch}
                                         placeholder="Search for recipes, ingredients, or cuisines..."
@@ -63,7 +63,7 @@ export default function Home() {
                             </BlurFade>
 
                             <BlurFade delay={0.6}>
-                                <div className="mt-10 flex items-center justify-center gap-x-6">
+                                <div className="flex items-center justify-center gap-x-6">
                                     <Link href="/register">
                                         <ShimmerButton
                                             className="px-8 py-3 text-lg"
