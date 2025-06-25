@@ -81,12 +81,16 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     const handleGuestLogin = async () => {
         try {
             await guestLogin();
-            onSuccess?.();
 
-            // Redirect if specified
+            // For guest users, always redirect to onboarding
             if (redirectTo) {
                 window.location.href = redirectTo;
+            } else {
+                // Default redirect for guest users to onboarding
+                window.location.href = '/onboarding';
             }
+
+            onSuccess?.();
         } catch (err: unknown) {
             const errorObj = err as { status?: number; message?: string };
             setError('root', {

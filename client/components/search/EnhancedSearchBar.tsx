@@ -231,7 +231,7 @@ export default function EnhancedSearchBar({
 
             {/* Filter Panel */}
             {showFilterPanel && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-40 p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Fuzzy Search Toggle */}
                         <div>
@@ -330,7 +330,7 @@ export default function EnhancedSearchBar({
             {showSuggestions && (
                 <div
                     ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-40 max-h-96 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
                 >
                     {isLoading ? (
                         <div className="px-4 py-8 text-center text-gray-500">

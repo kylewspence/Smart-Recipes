@@ -152,77 +152,80 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
 
                 {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    {/* Name Fields Row */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* First Name */}
-                        <div>
-                            <label
-                                htmlFor="firstName"
-                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                            >
-                                First Name
-                            </label>
-                            <div className="relative">
-                                <input
-                                    {...register('firstName')}
-                                    id="firstName"
-                                    type="text"
-                                    autoComplete="given-name"
-                                    className={`
-                    block w-full px-3 py-3 border rounded-xl
-                    focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                    transition-all duration-200 ease-in-out
-                    ${errors.firstName
-                                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                                        }
-                    text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
-                  `}
-                                    placeholder="John"
-                                    disabled={isFormLoading}
-                                />
+                    {/* First Name Field */}
+                    <div>
+                        <label
+                            htmlFor="firstName"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            First Name
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User className="h-5 w-5 text-gray-400" />
                             </div>
-                            {errors.firstName && (
-                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                                    {errors.firstName.message}
-                                </p>
-                            )}
+                            <input
+                                {...register('firstName')}
+                                id="firstName"
+                                type="text"
+                                autoComplete="given-name"
+                                className={`
+                  block w-full pl-10 pr-3 py-3 border rounded-xl
+                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  transition-all duration-200 ease-in-out
+                  ${errors.firstName
+                                        ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
+                                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+                                    }
+                  text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
+                `}
+                                placeholder="Enter your first name"
+                                disabled={isFormLoading}
+                            />
                         </div>
+                        {errors.firstName && (
+                            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                                {errors.firstName.message}
+                            </p>
+                        )}
+                    </div>
 
-                        {/* Last Name */}
-                        <div>
-                            <label
-                                htmlFor="lastName"
-                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                            >
-                                Last Name
-                            </label>
-                            <div className="relative">
-                                <input
-                                    {...register('lastName')}
-                                    id="lastName"
-                                    type="text"
-                                    autoComplete="family-name"
-                                    className={`
-                    block w-full px-3 py-3 border rounded-xl
-                    focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-                    transition-all duration-200 ease-in-out
-                    ${errors.lastName
-                                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                                        }
-                    text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
-                  `}
-                                    placeholder="Doe"
-                                    disabled={isFormLoading}
-                                />
+                    {/* Last Name Field */}
+                    <div>
+                        <label
+                            htmlFor="lastName"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        >
+                            Last Name
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User className="h-5 w-5 text-gray-400" />
                             </div>
-                            {errors.lastName && (
-                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                                    {errors.lastName.message}
-                                </p>
-                            )}
+                            <input
+                                {...register('lastName')}
+                                id="lastName"
+                                type="text"
+                                autoComplete="family-name"
+                                className={`
+                  block w-full pl-10 pr-3 py-3 border rounded-xl
+                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+                  transition-all duration-200 ease-in-out
+                  ${errors.lastName
+                                        ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
+                                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+                                    }
+                  text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
+                `}
+                                placeholder="Enter your last name"
+                                disabled={isFormLoading}
+                            />
                         </div>
+                        {errors.lastName && (
+                            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                                {errors.lastName.message}
+                            </p>
+                        )}
                     </div>
 
                     {/* Email Field */}
@@ -315,8 +318,8 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
                                         Password strength:
                                     </span>
                                     <span className={`text-xs font-medium ${passwordStrength.score <= 2 ? 'text-red-500' :
-                                            passwordStrength.score <= 3 ? 'text-yellow-500' :
-                                                passwordStrength.score <= 4 ? 'text-blue-500' : 'text-green-500'
+                                        passwordStrength.score <= 3 ? 'text-yellow-500' :
+                                            passwordStrength.score <= 4 ? 'text-blue-500' : 'text-green-500'
                                         }`}>
                                         {passwordStrength.label}
                                     </span>

@@ -38,12 +38,12 @@ export default function Home() {
                     <div className={responsive.container.section}>
                         <div className="mx-auto max-w-2xl text-center">
                             <BlurFade delay={0.2}>
-                                <h1 className={responsive.text.h1}>
+                                <h1 className={`${responsive.text.h1} text-center`}>
                                     AI-Powered Recipes for Your Preferences
                                 </h1>
                             </BlurFade>
                             <BlurFade delay={0.4}>
-                                <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                                <p className="mt-6 text-lg leading-8 text-muted-foreground text-center">
                                     Get personalized recipe suggestions based on your dietary needs, preferences, and available ingredients.
                                 </p>
                             </BlurFade>
