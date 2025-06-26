@@ -47,8 +47,8 @@ export function AuthenticatedNav() {
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: ChefHat },
-        { href: '/recipes', label: 'Recipes', icon: BookOpen },
-        { href: '/favorites', label: 'Favorites', icon: Heart },
+        { href: '/recipes/generate', label: 'Generate Recipe', icon: BookOpen },
+        { href: '/recipes/saved', label: 'Saved Recipes', icon: Heart },
         { href: '/search', label: 'Search', icon: Search },
     ];
 
@@ -118,21 +118,21 @@ export function AuthenticatedNav() {
                                     </div>
 
                                     <Link
-                                        href="/profile"
+                                        href="/preferences/manage"
                                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                         onClick={() => setIsProfileDropdownOpen(false)}
                                     >
                                         <User className="w-4 h-4 mr-2" />
-                                        Profile
+                                        Preferences
                                     </Link>
 
                                     <Link
-                                        href="/settings"
+                                        href="/preferences"
                                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                         onClick={() => setIsProfileDropdownOpen(false)}
                                     >
                                         <Settings className="w-4 h-4 mr-2" />
-                                        Settings
+                                        Setup Preferences
                                     </Link>
 
                                     <button
