@@ -16,9 +16,17 @@ interface DatabaseConfig {
     healthCheckInterval: number;
 }
 
+// Build external database URL from Railway components if available
+const buildExternalDatabaseUrl = () => {
+    if (process.env.PGHOST && process.env.PGUSER && process.env.PGPASSWORD && process.env.PGDATABASE && process.env.PGPORT) {
+        return `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`;
+    }
+    return null;
+};
+
 // Production-ready database configuration
 const dbConfig: DatabaseConfig = {
-    connectionString: process.env.DATABASE_PUBLIC_URL || process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smart-recipes',
+    connectionString: buildExternalDatabaseUrl() || process.env.DATABASE_PUBLIC_URL || process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smart-recipes',
 
     // Connection Pool Configuration
     max: parseInt(process.env.DB_POOL_MAX || '20'), // Maximum connections in pool
