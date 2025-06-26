@@ -35,20 +35,37 @@ app.use(helmet({
     }
 }));
 
-// CORS configuration
-app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
+// Manual CORS middleware for better control
+app.use((req, res, next) => {
+    const allowedOrigins = process.env.NODE_ENV === 'production'
         ? [
             'https://smart-recipes.vercel.app',
             'https://smart-recipes-nine.vercel.app',
-            'https://smart-recipes-preview.vercel.app',
-            /\.vercel\.app$/ // Any Vercel deployment
+            'https://smart-recipes-preview.vercel.app'
         ]
-        : ['http://localhost:3000', 'http://localhost:3003'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+        : ['http://localhost:3000', 'http://localhost:3003'];
+
+    const origin = req.headers.origin;
+
+    // Allow any .vercel.app domain in production
+    if (process.env.NODE_ENV === 'production' && origin && origin.includes('.vercel.app')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(204).end();
+        return;
+    }
+
+    next();
+});
 
 // Parse JSON with size limit
 app.use(express.json({ limit: '10mb' }));
