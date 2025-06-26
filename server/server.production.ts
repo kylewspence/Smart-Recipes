@@ -38,7 +38,12 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-        ? [process.env.FRONTEND_URL || 'https://smart-recipes.vercel.app']
+        ? [
+            'https://smart-recipes.vercel.app',
+            'https://smart-recipes-nine.vercel.app',
+            'https://smart-recipes-preview.vercel.app',
+            /\.vercel\.app$/ // Any Vercel deployment
+        ]
         : ['http://localhost:3000', 'http://localhost:3003'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
