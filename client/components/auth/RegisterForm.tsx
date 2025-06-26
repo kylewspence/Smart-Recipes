@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, User, Check } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { RegisterData } from '@/lib/types/auth';
+import { useRouter } from 'next/navigation';
 
 // Enhanced validation schema
 const registerSchema = z.object({
@@ -71,6 +72,7 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register: registerUser, isLoading, error } = useAuth();
+    const router = useRouter();
 
     const {
         register,
@@ -98,9 +100,11 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
             await registerUser(data as RegisterData);
             onSuccess?.();
 
-            // Redirect if specified
+            // Redirect if specified, otherwise go to dashboard
             if (redirectTo) {
                 window.location.href = redirectTo;
+            } else {
+                router.push('/dashboard');
             }
         } catch (err: any) {
             // Handle specific error cases
