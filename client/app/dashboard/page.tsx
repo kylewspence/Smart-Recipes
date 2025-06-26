@@ -22,6 +22,7 @@ import { MagicCard, ShimmerButton, BlurFade, NumberTicker } from '@/components/m
 import RecipeCard from '@/components/recipe/RecipeCard';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { preferencesService } from '@/lib/services/preferences';
 
 interface UserStats {
     recipesGenerated: number;
@@ -59,9 +60,10 @@ interface Achievement {
 }
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
+    const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
     const [stats, setStats] = useState<UserStats>({
         recipesGenerated: 0,
         favoriteRecipes: 0,
@@ -77,6 +79,34 @@ export default function DashboardPage() {
     const [recentRecipes, setRecentRecipes] = useState<any[]>([]);
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Check if user has completed onboarding
+    useEffect(() => {
+        const checkOnboardingStatus = async () => {
+            if (!user || authLoading) return;
+
+            try {
+                // Try to get user preferences
+                const preferences = await preferencesService.getUserPreferences(user.userId.toString());
+                setHasCompletedOnboarding(true);
+            } catch (error: any) {
+                // If preferences don't exist (404), user needs onboarding
+                if (error.status === 404 || error.message?.includes('not found')) {
+                    setHasCompletedOnboarding(false);
+                    router.push('/onboarding');
+                    return;
+                } else {
+                    console.error('Error checking onboarding status:', error);
+                    // On other errors, assume they need onboarding
+                    setHasCompletedOnboarding(false);
+                    router.push('/onboarding');
+                    return;
+                }
+            }
+        };
+
+        checkOnboardingStatus();
+    }, [user, authLoading, router]);
 
     // Mock data for demonstration
     useEffect(() => {
@@ -198,7 +228,24 @@ export default function DashboardPage() {
 
             setIsLoading(false);
         }, 1000);
-    }, []);
+    }, [hasCompletedOnboarding]); // Only load data after onboarding check is complete
+
+    // Show loading while checking authentication or onboarding status
+    if (authLoading || hasCompletedOnboarding === null) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If user hasn't completed onboarding, they'll be redirected
+    if (hasCompletedOnboarding === false) {
+        return null;
+    }
 
     const formatCookingTime = (minutes: number) => {
         const hours = Math.floor(minutes / 60);

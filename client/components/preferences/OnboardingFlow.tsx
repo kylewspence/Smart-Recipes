@@ -95,9 +95,6 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
         try {
             await preferencesService.createUserPreferences(user.userId.toString(), formData);
 
-            // Mark onboarding as complete in local storage
-            localStorage.setItem('onboarding_completed', 'true');
-
             // Call completion callback or redirect
             if (onComplete) {
                 onComplete();
