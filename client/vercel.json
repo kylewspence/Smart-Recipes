@@ -6,8 +6,8 @@
     "devCommand": "npm run dev",
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "https://smart-recipes-production.up.railway.app/api/$1"
+            "source": "/api/:path*",
+            "destination": "https://smart-recipes-production.up.railway.app/api/:path*"
         }
     ],
     "headers": [
