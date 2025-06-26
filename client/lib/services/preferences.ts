@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { UserPreferences, Ingredient, IngredientPreference } from '../types/preferences';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Create axios instance with defaults
 const preferencesApi = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: `${API_BASE_URL}/api`,
     timeout: 10000,
 });
 
