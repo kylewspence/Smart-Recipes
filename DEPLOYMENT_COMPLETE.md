@@ -215,8 +215,8 @@ app.use((req, res, next) => {
 // Register new user
 async register(data: RegisterData): Promise<AuthResponse> {
     try {
-        // Remove confirmPassword and combine firstName + lastName into name
-        const { confirmPassword, firstName, lastName, ...registerData } = data;
+        // Combine firstName + lastName into name, keep confirmPassword for backend validation
+        const { firstName, lastName, ...registerData } = data;
         const apiData = {
             ...registerData,
             name: `${firstName} ${lastName}`.trim()
@@ -226,6 +226,8 @@ async register(data: RegisterData): Promise<AuthResponse> {
     }
 }
 ```
+
+**Critical Additional Fix:** Backend validation schema required `confirmPassword` field for validation, but frontend was initially removing it before sending to API. Final fix kept `confirmPassword` in the request (backend removes it after validation passes).
 
 ### Issue 7: Environment Variable Configuration
 **Problem:** `NEXT_PUBLIC_API_URL` was set to include `/api/` causing double paths  
