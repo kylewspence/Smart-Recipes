@@ -60,9 +60,7 @@ const pool = new pg.Pool({
         rejectUnauthorized: false,
     } : false,
 
-    // Query configuration
-    statement_timeout: dbConfig.statement_timeout,
-    query_timeout: dbConfig.query_timeout,
+    // Note: statement_timeout and query_timeout are handled per-query, not in pool config
 });
 
 // Connection pool monitoring
