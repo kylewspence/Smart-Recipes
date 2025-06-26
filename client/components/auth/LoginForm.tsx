@@ -62,15 +62,8 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                 console.log('LoginForm: Redirecting to:', redirectTo);
                 window.location.href = redirectTo;
             } else {
-                // Check if user has completed onboarding
-                const onboardingCompleted = localStorage.getItem('onboarding_completed');
-                if (onboardingCompleted === 'true') {
-                    console.log('LoginForm: User has completed onboarding, redirecting to dashboard');
-                    window.location.href = '/dashboard';
-                } else {
-                    console.log('LoginForm: User needs onboarding, redirecting to onboarding');
-                    window.location.href = '/onboarding';
-                }
+                console.log('LoginForm: Redirecting to dashboard');
+                window.location.href = '/dashboard';
             }
         } catch (err: unknown) {
             // Handle specific error cases

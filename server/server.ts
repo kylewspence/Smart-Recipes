@@ -139,8 +139,8 @@ app.use('/api/privacy', rateLimiters.admin, privacyRoutes);
 
 // Regular API routes with standard rate limiting (already applied globally)
 app.use('/api/users', userRoutes);
+app.use('/api/users', preferencesRoutes); // Mount preferences under /api/users for /users/:userId/preferences
 app.use('/api/recipes', recipeRoutes);
-app.use('/api/preferences', preferencesRoutes);
 app.use('/api/ingredients', ingredientsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 
@@ -164,8 +164,9 @@ app.use('/api/*', (req, res) => {
       'POST /api/auth/register',
       'POST /api/auth/login',
       'GET /api/users',
+      'POST /api/users/:userId/preferences',
+      'GET /api/users/:userId/preferences',
       'GET /api/recipes',
-      'GET /api/preferences',
       'GET /api/ingredients',
       'GET /api/search',
       'GET /api/recommendations',
