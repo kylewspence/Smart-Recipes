@@ -33,11 +33,21 @@
   - Added `/search` (Search)
 - **Result**: All navigation links now work properly
 
-### ✅ User Onboarding Flow
+### ✅ User Onboarding Flow - FULLY FIXED
 - **Issue**: New users saw dummy dashboard data instead of setup flow
-- **Fix**: Added onboarding detection using `localStorage.getItem('onboarding_completed')`
-- **Logic**: New users → `/onboarding`, Existing users → `/dashboard`
-- **Result**: Proper user experience for both new and returning users
+- **Fix**: Database-based onboarding detection using preferences API
+- **Logic**: 
+  - Dashboard checks if user has preferences in database
+  - No preferences found → redirect to `/onboarding`
+  - Preferences exist → show dashboard
+  - After completing onboarding → preferences saved → dashboard accessible
+- **Result**: Reliable, persistent onboarding flow that works across sessions
+
+### ✅ Preferences API Route Fixed
+- **Issue**: 404 error when completing onboarding (POST /api/users/:userId/preferences)
+- **Root Cause**: Preferences routes mounted at `/api/preferences` but called at `/api/users/:userId/preferences`
+- **Fix**: Remounted preferences routes under `/api/users` to match expected path structure
+- **Result**: Onboarding completion now works perfectly, preferences saved successfully
 
 ### ✅ Profile Menu Updated
 - **Issue**: Profile dropdown had non-existent routes (`/profile`, `/settings`)
