@@ -549,7 +549,7 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
         }
 
         let whereConditions = ['TRUE']; // Base condition
-        let queryParams = [userId]; // userId is always first parameter
+        let queryParams: any[] = [userId]; // userId is always first parameter
         let paramIndex = 2;
 
         // Build dynamic WHERE clause
@@ -600,10 +600,10 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
             data: {
                 ingredients: results.rows,
                 pagination: {
-                    total: parseInt(countResult.rows[0].total),
+                    total: Number(countResult.rows[0].total),
                     limit: searchParams.limit,
                     offset: searchParams.offset,
-                    hasMore: (searchParams.offset + searchParams.limit) < parseInt(countResult.rows[0].total)
+                    hasMore: (searchParams.offset + searchParams.limit) < Number(countResult.rows[0].total)
                 }
             }
         });
@@ -622,7 +622,7 @@ router.get('/suggestions/discover', async (req, res, next) => {
     try {
         const { cuisine, category, limit = 20 } = req.query;
 
-        const limitNum = Math.min(parseInt(limit as string) || 20, 50);
+        const limitNum = Math.min(parseInt(limit as string, 10) || 20, 50);
 
         let whereConditions = [];
         let queryParams = [];
@@ -683,8 +683,8 @@ router.get('/trending/popular', async (req, res, next) => {
     try {
         const { days = 30, limit = 20 } = req.query;
 
-        const daysNum = Math.min(parseInt(days as string) || 30, 365);
-        const limitNum = Math.min(parseInt(limit as string) || 20, 50);
+        const daysNum = Math.min(parseInt(days as string, 10) || 30, 365);
+        const limitNum = Math.min(parseInt(limit as string, 10) || 20, 50);
 
         const trendingQuery = `
             SELECT i.*, 
