@@ -229,6 +229,8 @@ async register(data: RegisterData): Promise<AuthResponse> {
 
 **Critical Additional Fix:** Backend validation schema required `confirmPassword` field for validation, but frontend was initially removing it before sending to API. Final fix kept `confirmPassword` in the request (backend removes it after validation passes).
 
+**Navigation Fix:** Registration form wasn't redirecting users after successful account creation. Added automatic redirect to `/dashboard` after successful registration using Next.js `useRouter`.
+
 ### Issue 7: Environment Variable Configuration
 **Problem:** `NEXT_PUBLIC_API_URL` was set to include `/api/` causing double paths  
 **Solution:** Updated Vercel environment variable:
