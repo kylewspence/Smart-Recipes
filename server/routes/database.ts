@@ -66,6 +66,29 @@ router.get('/config', async (req, res, next) => {
     }
 });
 
+// Debug endpoint to check database URL (for development only)
+router.get('/debug-url', async (req, res, next) => {
+    try {
+        const urlInfo = {
+            hasPublicUrl: !!process.env.DATABASE_PUBLIC_URL,
+            hasExternalUrl: !!process.env.EXTERNAL_DATABASE_URL,
+            hasRegularUrl: !!process.env.DATABASE_URL,
+            publicUrlHost: process.env.DATABASE_PUBLIC_URL ? new URL(process.env.DATABASE_PUBLIC_URL).host : null,
+            externalUrlHost: process.env.EXTERNAL_DATABASE_URL ? new URL(process.env.EXTERNAL_DATABASE_URL).host : null,
+            regularUrlHost: process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : null,
+            nodeEnv: process.env.NODE_ENV
+        };
+
+        res.json({
+            success: true,
+            data: urlInfo,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Performance metrics (requires monitoring to be enabled)
 router.get('/metrics', async (req, res, next) => {
     try {
