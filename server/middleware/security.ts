@@ -18,6 +18,7 @@ const corsOptions = {
             'https://smart-recipes.vercel.app', // Production frontend
             'https://smart-recipes-preview.vercel.app', // Preview deployments
             'https://smart-recipes-kylewspence.vercel.app', // User-specific Vercel URL
+            'https://smart-recipes-nine.vercel.app', // Current deployment URL
             // Add more domains as needed
         ];
 

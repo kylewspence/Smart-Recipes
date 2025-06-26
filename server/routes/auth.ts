@@ -454,6 +454,22 @@ router.post('/guest', async (req, res, next) => {
 });
 
 /**
+ * Password reset request
+ * POST /api/auth/forgot-password
+ */
+router.post('/forgot-password', async (req, res, next) => {
+    try {
+        // For now, just return a success message
+        // In a real app, you'd send an email with reset link
+        res.status(200).json({
+            message: 'If that email exists, a password reset link has been sent.'
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
  * Get current user
  * GET /api/auth/me
  */
