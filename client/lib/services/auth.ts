@@ -143,8 +143,8 @@ export const authService = {
     // Register new user
     async register(data: RegisterData): Promise<AuthResponse> {
         try {
-            // Remove confirmPassword and combine firstName + lastName into name
-            const { confirmPassword, firstName, lastName, ...registerData } = data;
+            // Combine firstName + lastName into name, keep confirmPassword for backend validation
+            const { firstName, lastName, ...registerData } = data;
             const apiData = {
                 ...registerData,
                 name: `${firstName} ${lastName}`.trim()
