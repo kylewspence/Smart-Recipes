@@ -1,7 +1,7 @@
 {
-    "buildCommand": "cd client && npm install && npm run build",
+    "buildCommand": "cd client && npm install --include=dev && npm run build",
     "outputDirectory": "client/.next",
-    "installCommand": "cd client && npm install",
+    "installCommand": "cd client && npm install --include=dev",
     "framework": "nextjs",
     "functions": {
         "client/app/**": {
