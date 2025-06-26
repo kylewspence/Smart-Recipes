@@ -18,7 +18,7 @@ interface DatabaseConfig {
 
 // Production-ready database configuration
 const dbConfig: DatabaseConfig = {
-    connectionString: process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smart-recipes',
+    connectionString: process.env.DATABASE_PUBLIC_URL || process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smart-recipes',
 
     // Connection Pool Configuration
     max: parseInt(process.env.DB_POOL_MAX || '20'), // Maximum connections in pool
