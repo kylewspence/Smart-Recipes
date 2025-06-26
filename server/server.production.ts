@@ -105,7 +105,7 @@ app.get('/api/db-test', async (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/users', preferencesRoutes); // Mount preferences under /api/users for /users/:userId/preferences
+app.use('/api/users', preferencesRoutes); // Mount preferences under /api/users for /users/:userId/preferences - FIXED
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/ingredients', ingredientsRoutes);
 app.use('/api/search', searchRoutes);
