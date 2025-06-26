@@ -10,38 +10,15 @@ export const generateNonce = (): string => {
 
 // CORS configuration for different environments
 const corsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests from our frontend domains
-        const allowedOrigins = [
-            'http://localhost:3000', // Local development
-            'http://localhost:3001', // Local API testing
-            'https://smart-recipes.vercel.app', // Production frontend
-            'https://smart-recipes-preview.vercel.app', // Preview deployments
-            'https://smart-recipes-kylewspence.vercel.app', // User-specific Vercel URL
-            'https://smart-recipes-nine.vercel.app', // Current deployment URL
-            // Add more domains as needed
-        ];
-
-        // Allow requests with no origin (like mobile apps or Postman)
-        if (!origin) return callback(null, true);
-
-        // Check if origin is in allowed list
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-
-        // In development, allow any localhost
-        if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
-            return callback(null, true);
-        }
-
-        // Allow any Vercel deployment URL pattern
-        if (origin && (origin.includes('.vercel.app') || origin.includes('vercel.app'))) {
-            return callback(null, true);
-        }
-
-        return callback(new Error('Not allowed by CORS'), false);
-    },
+    origin: [
+        'http://localhost:3000', // Local development
+        'http://localhost:3001', // Local API testing
+        'https://smart-recipes.vercel.app', // Production frontend
+        'https://smart-recipes-preview.vercel.app', // Preview deployments
+        'https://smart-recipes-kylewspence.vercel.app', // User-specific Vercel URL
+        'https://smart-recipes-nine.vercel.app', // Current deployment URL
+        /\.vercel\.app$/, // Any Vercel deployment
+    ],
     credentials: true, // Allow cookies for authentication
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
