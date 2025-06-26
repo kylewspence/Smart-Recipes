@@ -35,7 +35,7 @@ export interface AuthTokens {
 
 export interface AuthState {
     user: User | null;
-    token: string | null;
+    tokens: AuthTokens | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;

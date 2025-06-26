@@ -383,75 +383,7 @@ router.post('/logout', async (req, res, next) => {
     }
 });
 
-/**
- * Guest login - creates a temporary guest session
- * POST /api/auth/guest
- */
-router.post('/guest', async (req, res, next) => {
-    try {
-        // Check if guest user already exists
-        let guestUser = await db.query(
-            'SELECT "userId", "email", "name" FROM "users" WHERE "email" = $1',
-            ['guest@smartrecipes.demo']
-        );
 
-        // If guest user doesn't exist, create it
-        if (guestUser.rows.length === 0) {
-            const guestResult = await db.query(
-                'INSERT INTO "users" ("email", "name", "passwordHash") VALUES ($1, $2, $3) RETURNING "userId", "email", "name"',
-                ['guest@smartrecipes.demo', 'Guest User', 'guest_no_password_hash']
-            );
-            guestUser = guestResult;
-
-            // Create default preferences for guest user
-            const userId = guestResult.rows[0].userId;
-
-            // Add basic user preferences
-            await db.query(
-                `INSERT INTO "userPreferences" 
-                ("userId", "dietaryRestrictions", "allergies", "cuisinePreferences", "spiceLevel", "maxCookingTime", "servingSize") 
-                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                [
-                    userId,
-                    [], // No dietary restrictions
-                    [], // No allergies
-                    ['american', 'italian', 'mexican'], // Popular cuisines
-                    'medium', // Medium spice level
-                    60, // 1 hour max cooking time
-                    4 // Serves 4 people
-                ]
-            );
-        }
-
-        const user = guestUser.rows[0];
-
-        // Generate tokens
-        const token = generateToken({
-            userId: user.userId,
-            email: user.email,
-            name: user.name
-        });
-
-        const refreshToken = await generateRefreshToken(user.userId);
-
-        // Return tokens and user data
-        res.status(200).json({
-            user: {
-                userId: user.userId,
-                email: user.email,
-                name: user.name,
-                isGuest: true
-            },
-            token,
-            refreshToken,
-            expiresIn: 3600, // 1 hour
-            message: 'Guest session created successfully'
-        });
-    } catch (error) {
-        console.error('❌ Guest login error:', error);
-        next(error);
-    }
-});
 
 /**
  * Password reset request

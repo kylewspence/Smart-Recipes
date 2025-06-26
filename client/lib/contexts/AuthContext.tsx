@@ -190,9 +190,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Login function
     const login = useCallback(async (credentials: LoginCredentials) => {
         try {
+            console.log('AuthContext: Starting login process');
             dispatch({ type: 'AUTH_START' });
 
+            console.log('AuthContext: Calling authService.login');
             const authData = await authService.login(credentials);
+            console.log('AuthContext: Login successful, dispatching AUTH_SUCCESS');
 
             dispatch({
                 type: 'AUTH_SUCCESS',
@@ -205,7 +208,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     },
                 },
             });
+            console.log('AuthContext: Login complete');
         } catch (error: any) {
+            console.error('AuthContext: Login failed:', error);
             dispatch({
                 type: 'AUTH_FAILURE',
                 payload: error.message || 'Login failed',

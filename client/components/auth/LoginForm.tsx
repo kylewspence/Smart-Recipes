@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { LoginCredentials } from '@/lib/types/auth';
@@ -32,6 +33,7 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     const [showPassword, setShowPassword] = useState(false);
     const { login, guestLogin, isLoading, error } = useAuth();
+    const router = useRouter();
 
     const {
         register,
@@ -49,12 +51,19 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
 
     const onSubmit = async (data: LoginFormData) => {
         try {
+            console.log('LoginForm: Starting login with data:', { email: data.email });
             await login(data as LoginCredentials);
+            console.log('LoginForm: Login successful, calling onSuccess');
             onSuccess?.();
 
-            // Redirect if specified
+            // Use window.location for more reliable redirect
+            console.log('LoginForm: About to redirect, redirectTo:', redirectTo);
             if (redirectTo) {
+                console.log('LoginForm: Redirecting to:', redirectTo);
                 window.location.href = redirectTo;
+            } else {
+                console.log('LoginForm: Redirecting to dashboard');
+                window.location.href = '/dashboard';
             }
         } catch (err: unknown) {
             // Handle specific error cases
@@ -87,7 +96,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                 window.location.href = redirectTo;
             } else {
                 // Default redirect for guest users to onboarding
-                window.location.href = '/onboarding';
+                router.push('/onboarding');
             }
 
             onSuccess?.();

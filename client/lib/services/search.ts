@@ -1,8 +1,6 @@
 import { Recipe } from '../types/recipe';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-    ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-    : 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Search types and interfaces
 export interface SearchFilters {
@@ -98,7 +96,7 @@ export class SearchService {
     }
 
     private async makeRequest<T>(endpoint: string, params: URLSearchParams): Promise<T> {
-        const url = `${API_BASE_URL}${endpoint}?${params.toString()}`;
+        const url = `${API_BASE_URL}/api${endpoint}?${params.toString()}`;
 
         try {
             const response = await fetch(url, {

@@ -12,7 +12,7 @@ const recipeApi = axios.create({
 
 // Add token to requests
 recipeApi.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -133,7 +133,7 @@ export interface RecipeResponse {
 
 class RecipeService {
     private getAuthHeaders() {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         return {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` }),
