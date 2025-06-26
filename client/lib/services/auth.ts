@@ -143,9 +143,13 @@ export const authService = {
     // Register new user
     async register(data: RegisterData): Promise<AuthResponse> {
         try {
-            // Remove confirmPassword before sending to API
-            const { confirmPassword, ...registerData } = data;
-            const response = await authApi.post<AuthResponse>('/auth/register', registerData);
+            // Remove confirmPassword and combine firstName + lastName into name
+            const { confirmPassword, firstName, lastName, ...registerData } = data;
+            const apiData = {
+                ...registerData,
+                name: `${firstName} ${lastName}`.trim()
+            };
+            const response = await authApi.post<AuthResponse>('/auth/register', apiData);
             const authData = response.data;
 
             // Store tokens
