@@ -95,6 +95,7 @@ export interface JwtUser {
     userId: number;
     email: string;
     name: string;
+    role?: 'user' | 'moderator' | 'admin';
     iat?: number;
 }
 

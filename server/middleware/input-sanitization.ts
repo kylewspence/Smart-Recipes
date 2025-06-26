@@ -9,6 +9,21 @@ import {
     safeUrlSchema,
     securityAuditSchema
 } from '../schemas/securitySchemas';
+import { pool as db } from '../db/db';
+
+// Extend Express Request interface for file uploads
+declare global {
+    namespace Express {
+        interface Request {
+            file?: {
+                originalname: string;
+                mimetype: string;
+                size: number;
+            };
+            files?: any;
+        }
+    }
+}
 
 // Security audit logging
 const logSecurityEvent = async (req: Request, severity: 'low' | 'medium' | 'high' | 'critical', action: string, details?: any) => {
@@ -142,7 +157,7 @@ export const sqlInjectionProtection = (req: Request, res: Response, next: NextFu
         }
 
         next();
-    } catch (error) {
+    } catch (error: any) {
         logSecurityEvent(req, 'high', 'SQL_INJECTION_CHECK_ERROR', { error: error.message });
         next(error);
     }
@@ -191,7 +206,7 @@ export const pathTraversalProtection = (req: Request, res: Response, next: NextF
         }
 
         next();
-    } catch (error) {
+    } catch (error: any) {
         logSecurityEvent(req, 'high', 'PATH_TRAVERSAL_CHECK_ERROR', { error: error.message });
         next(error);
     }
@@ -241,7 +256,7 @@ export const commandInjectionProtection = (req: Request, res: Response, next: Ne
         }
 
         next();
-    } catch (error) {
+    } catch (error: any) {
         logSecurityEvent(req, 'high', 'COMMAND_INJECTION_CHECK_ERROR', { error: error.message });
         next(error);
     }
@@ -323,7 +338,7 @@ export const fileUploadSecurity = (req: Request, res: Response, next: NextFuncti
         }
 
         next();
-    } catch (error) {
+    } catch (error: any) {
         logSecurityEvent(req, 'high', 'FILE_UPLOAD_SECURITY_ERROR', { error: error.message });
         next(error);
     }

@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { z } from 'zod';
 import { pool } from '../db/db';
-import { ClientError } from '../utils/errors';
+import { ClientError } from '../lib/client-error';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client
