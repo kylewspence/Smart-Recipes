@@ -17,6 +17,7 @@ const corsOptions = {
             'http://localhost:3001', // Local API testing
             'https://smart-recipes.vercel.app', // Production frontend
             'https://smart-recipes-preview.vercel.app', // Preview deployments
+            'https://smart-recipes-kylewspence.vercel.app', // User-specific Vercel URL
             // Add more domains as needed
         ];
 
@@ -30,6 +31,11 @@ const corsOptions = {
 
         // In development, allow any localhost
         if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+            return callback(null, true);
+        }
+
+        // Allow any Vercel deployment URL pattern
+        if (origin && (origin.includes('.vercel.app') || origin.includes('vercel.app'))) {
             return callback(null, true);
         }
 

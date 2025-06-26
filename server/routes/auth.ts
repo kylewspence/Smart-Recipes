@@ -213,6 +213,82 @@ router.post('/login',
     });
 
 /**
+ * Guest login
+ * POST /api/auth/guest
+ */
+router.post('/guest', async (req, res, next) => {
+    try {
+        // Log guest login attempt
+        await logSecurityEvent(req, 'low', 'GUEST_LOGIN_ATTEMPT', {
+            timestamp: new Date().toISOString()
+        });
+
+        // Use the existing guest user credentials
+        const guestCredentials = {
+            email: 'guest@example.com',
+            password: 'guest123'
+        };
+
+        // Find guest user by email
+        const result = await db.query(
+            'SELECT "userId", "email", "name", "passwordHash" FROM "users" WHERE "email" = $1',
+            [guestCredentials.email]
+        );
+
+        if (result.rows.length === 0) {
+            await logSecurityEvent(req, 'high', 'GUEST_USER_NOT_FOUND', {
+                email: guestCredentials.email
+            });
+            throw new ClientError(500, 'Guest user not configured');
+        }
+
+        const user = result.rows[0];
+
+        // Verify guest password
+        const isPasswordValid = await comparePassword(guestCredentials.password, user.passwordHash);
+
+        if (!isPasswordValid) {
+            await logSecurityEvent(req, 'high', 'GUEST_PASSWORD_INVALID', {
+                userId: user.userId
+            });
+            throw new ClientError(500, 'Guest user configuration error');
+        }
+
+        // Generate tokens
+        const token = generateToken({
+            userId: user.userId,
+            email: user.email,
+            name: user.name
+        });
+
+        const refreshToken = await generateRefreshToken(user.userId);
+
+        // Log successful guest login
+        await logSecurityEvent(req, 'low', 'GUEST_LOGIN_SUCCESS', {
+            userId: user.userId
+        });
+
+        // Return tokens and user data with guest flag
+        res.status(200).json({
+            user: {
+                userId: user.userId,
+                email: user.email,
+                name: user.name,
+                isGuest: true
+            },
+            token,
+            refreshToken,
+            expiresIn: 3600 // 1 hour in seconds
+        });
+    } catch (error) {
+        await logSecurityEvent(req, 'medium', 'GUEST_LOGIN_FAILED', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        next(error);
+    }
+});
+
+/**
  * Refresh token
  * POST /api/auth/refresh
  */
