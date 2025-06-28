@@ -1,3 +1,4 @@
+// Smart Recipes API Server - Updated deployment
 import 'dotenv/config';
 import express from 'express';
 import pg from 'pg';
