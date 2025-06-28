@@ -54,6 +54,24 @@ export const preferencesService = {
         return response.data.data;
     },
 
+    // Save user preferences (create or update as needed)
+    async saveUserPreferences(userId: string, preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+        try {
+            // Try to update first
+            return await this.updateUserPreferences(userId, preferences);
+        } catch (error: any) {
+            // If update fails with 404 (not found), try to create
+            if (error.response?.status === 404) {
+                return await this.createUserPreferences(userId, preferences);
+            }
+            // If create fails with 409 (conflict), try update again
+            if (error.response?.status === 409) {
+                return await this.updateUserPreferences(userId, preferences);
+            }
+            throw error;
+        }
+    },
+
     // Delete user preferences
     async deleteUserPreferences(userId: string): Promise<void> {
         await preferencesApi.delete(`/users/${userId}/preferences`);

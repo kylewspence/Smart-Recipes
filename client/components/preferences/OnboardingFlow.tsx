@@ -93,7 +93,7 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
         setError(null);
 
         try {
-            await preferencesService.createUserPreferences(user.userId.toString(), formData);
+            await preferencesService.saveUserPreferences(user.userId.toString(), formData);
 
             // Call completion callback or redirect
             if (onComplete) {
