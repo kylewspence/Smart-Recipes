@@ -4,10 +4,20 @@ import { pool } from '../db/db';
 import { ClientError } from '../lib/client-error';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+    if (!openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is required');
+        }
+        openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openai;
+}
 
 const router = express.Router();
 
@@ -658,7 +668,7 @@ ${includeExplanation ? '- explanation (string explaining why this recipe fits th
 Focus on variety, user preferences, and introducing new flavors that align with their taste profile.
 `;
 
-        const completion = await openai.chat.completions.create({
+        const completion = await getOpenAIClient().chat.completions.create({
             model: 'gpt-4',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.7,
@@ -849,7 +859,7 @@ Respond with JSON array containing:
 ${includeExplanation ? '- explanation (why it\'s similar)' : ''}
 `;
 
-        const completion = await openai.chat.completions.create({
+        const completion = await getOpenAIClient().chat.completions.create({
             model: 'gpt-4',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.7,
@@ -1123,7 +1133,7 @@ Respond with JSON array containing:
 - explanation (string): Why this combination works well
 `;
 
-        const completion = await openai.chat.completions.create({
+        const completion = await getOpenAIClient().chat.completions.create({
             model: 'gpt-4',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.8,
