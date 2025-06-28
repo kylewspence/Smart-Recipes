@@ -167,8 +167,8 @@ router.post('/generate', async (req, res, next) => {
 
                 if (ingredientResult.rows.length === 0) {
                     const newIngredientResult = await db.query(
-                        'INSERT INTO "ingredients" ("name", "category") VALUES ($1, $2) RETURNING "ingredientId"',
-                        [ingredient.name, 'other'] // Default category
+                        'INSERT INTO "ingredients" ("name", "categoryId") VALUES ($1, $2) RETURNING "ingredientId"',
+                        [ingredient.name, 1] // Default categoryId (assuming 1 exists)
                     );
                     ingredientId = newIngredientResult.rows[0].ingredientId;
                 } else {
