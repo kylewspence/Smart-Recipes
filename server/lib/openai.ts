@@ -7,10 +7,20 @@ import {
 } from '../types';
 import { openaiRecipeResponseSchema } from '../schemas/openaiSchemas';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily to ensure environment variables are loaded
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+    if (!openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is required');
+        }
+        openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openai;
+}
 
 // Error types to handle different failure scenarios
 export class OpenAIConnectionError extends Error {
@@ -220,7 +230,7 @@ export async function generateRecipe(promptParams: Parameters<typeof generateRec
 
                 console.log(`\n🤖 [OpenAI] Attempt ${attempt + 1}/${MAX_RETRIES + 1} with temperature ${temperature}`);
 
-                const completion = await openai.chat.completions.create({
+                const completion = await getOpenAIClient().chat.completions.create({
                     model: "gpt-4o-mini",
                     messages: [
                         {

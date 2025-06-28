@@ -1,8 +1,8 @@
 // Smart Recipes API Server - Updated deployment
+// Load environment variables FIRST before any other imports
 import dotenv from 'dotenv';
-
-// Load environment variables from the server directory
 dotenv.config({ path: '.env' });
+
 import express from 'express';
 import pg from 'pg';
 import { ClientError, errorMiddleware } from './lib/index';
