@@ -45,9 +45,19 @@ const recipeSearchSchema = z.object({
  */
 router.post('/generate', async (req, res, next) => {
     try {
+        // Add immediate debugging
+        console.log('\n🚀 [ROUTE] Recipe generation request received');
+        console.log('📨 Request body:', JSON.stringify(req.body, null, 2));
+
         // Validate request body
         const validatedData = recipeGenerationRequestSchema.parse(req.body);
         const { userId } = validatedData;
+
+        console.log('✅ [ROUTE] Request validated successfully');
+        console.log('👤 User ID:', userId);
+        console.log('🥕 Include Ingredients:', validatedData.includeIngredients);
+        console.log('🚫 Exclude Ingredients:', validatedData.excludeIngredients);
+        console.log('💬 Message:', validatedData.message);
 
         // Get user preferences from database
         const userPrefsResult = await db.query(
@@ -60,6 +70,12 @@ router.post('/generate', async (req, res, next) => {
         }
 
         const userPreferences = userPrefsResult.rows[0];
+        console.log('📋 [ROUTE] User preferences loaded:', {
+            dietaryRestrictions: userPreferences.dietaryRestrictions,
+            allergies: userPreferences.allergies,
+            spiceLevel: userPreferences.spiceLevel,
+            servingSize: userPreferences.servingSize
+        });
 
         // Get user ingredient preferences
         const ingredientPrefsResult = await db.query(
@@ -70,11 +86,16 @@ router.post('/generate', async (req, res, next) => {
             [userId]
         );
 
+        console.log(`🥘 [ROUTE] Found ${ingredientPrefsResult.rows.length} ingredient preferences`);
+
         // Get all ingredients for reference
         const ingredientsResult = await db.query('SELECT * FROM "ingredients"');
+        console.log(`📦 [ROUTE] Total ingredients in database: ${ingredientsResult.rows.length}`);
 
         // Generate recipe using OpenAI
         try {
+            console.log('🤖 [ROUTE] Calling OpenAI generateRecipe function...');
+
             const result = await generateRecipe({
                 userPreferences,
                 ingredientPreferences: ingredientPrefsResult.rows,
@@ -88,10 +109,15 @@ router.post('/generate', async (req, res, next) => {
                 customMessage: validatedData.message
             });
 
+            console.log('🎉 [ROUTE] OpenAI generateRecipe completed successfully');
+            console.log('📝 [ROUTE] Generated recipe title:', result.recipe.title);
+            console.log('🥘 [ROUTE] Recipe ingredients:', result.recipe.ingredients?.map(ing => ing.name).join(', '));
+
             const { recipe, generatedPrompt, fallback } = result;
 
             // If it's a fallback recipe, still return it but with a warning
             if (fallback) {
+                console.log('⚠️ [ROUTE] Returning fallback recipe');
                 res.status(207).json({
                     warning: "Could not generate a proper recipe. Returning a fallback recipe instead.",
                     fallback: true,
@@ -100,6 +126,8 @@ router.post('/generate', async (req, res, next) => {
                 });
                 return;
             }
+
+            console.log('💾 [ROUTE] Saving recipe to database...');
 
             // Save the generated recipe to the database
             const recipeInsertResult = await db.query(
@@ -126,6 +154,7 @@ router.post('/generate', async (req, res, next) => {
             );
 
             const recipeId = recipeInsertResult.rows[0].recipeId;
+            console.log('💾 [ROUTE] Recipe saved with ID:', recipeId);
 
             // Save recipe ingredients
             for (const ingredient of recipe.ingredients) {
@@ -163,6 +192,8 @@ router.post('/generate', async (req, res, next) => {
                 }
             }
 
+            console.log('✅ [ROUTE] Recipe generation completed successfully');
+
             // Return the complete recipe with its ID
             res.status(201).json({
                 recipeId,
@@ -170,6 +201,8 @@ router.post('/generate', async (req, res, next) => {
                 generatedPrompt
             });
         } catch (openAIError) {
+            console.error('❌ [ROUTE] OpenAI error occurred:', openAIError);
+
             // Special handling for OpenAI-specific errors
             if (openAIError instanceof OpenAIConnectionError) {
                 console.error('OpenAI connection error:', openAIError.originalError);
@@ -183,6 +216,7 @@ router.post('/generate', async (req, res, next) => {
             throw openAIError;
         }
     } catch (err) {
+        console.error('💥 [ROUTE] Fatal error in recipe generation route:', err);
         next(err);
     }
 });

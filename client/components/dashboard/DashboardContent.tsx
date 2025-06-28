@@ -120,7 +120,7 @@ function RecentActivity() {
             title: 'Generate New Recipe',
             description: 'Get AI-powered recipe suggestions based on your preferences',
             icon: ChefHat,
-            href: '/recipes/generate',
+            href: '/recipe-generator',
             color: 'bg-gradient-to-r from-green-500 to-blue-600'
         },
         {

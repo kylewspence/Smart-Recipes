@@ -112,7 +112,7 @@ export default function DashboardPage() {
         {
             title: "Generate Recipe",
             description: "Create a new AI-powered recipe",
-            href: "/recipes/generate",
+            href: "/recipe-generator",
             icon: <ChefHat className="w-6 h-6" />,
             color: "text-orange-600",
             gradient: "from-orange-500 to-red-500"
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                             Generate a personalized recipe based on your preferences and available ingredients.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/recipes/generate">
+                            <Link href="/recipe-generator">
                                 <ShimmerButton
                                     background="linear-gradient(45deg, #f97316, #ea580c)"
                                     className="flex items-center space-x-2 px-6 py-3"

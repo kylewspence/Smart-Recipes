@@ -47,7 +47,7 @@ export function AuthenticatedNav() {
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', icon: ChefHat },
-        { href: '/recipes/generate', label: 'Generate Recipe', icon: BookOpen },
+        { href: '/recipe-generator', label: 'Generate Recipe', icon: BookOpen },
         { href: '/recipes/saved', label: 'Saved Recipes', icon: Heart },
         { href: '/search', label: 'Search', icon: Search },
     ];

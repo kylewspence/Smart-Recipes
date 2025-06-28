@@ -79,7 +79,7 @@ export default function RecipeResultsPage() {
                         <div className="flex space-x-4">
                             <Button
                                 variant="outline"
-                                onClick={() => router.push("/recipes/generate")}
+                                onClick={() => router.push("/recipe-generator")}
                             >
                                 Regenerate
                             </Button>
@@ -188,7 +188,7 @@ export default function RecipeResultsPage() {
                                 <div className="mt-6 flex justify-end space-x-4">
                                     <Button
                                         variant="outline"
-                                        onClick={() => router.push("/recipes/generate")}
+                                        onClick={() => router.push("/recipe-generator")}
                                     >
                                         Regenerate
                                     </Button>
