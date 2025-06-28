@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChefHat, Clock, Plus, X, Sparkles, Loader, Wand2 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { recipeService } from '@/lib/services/recipe';
+import { RecipeGenerationParams, recipeService } from '@/lib/services/recipe';
 import { preferencesService } from '@/lib/services/preferences';
 import {
     RecipeFormData,
@@ -62,7 +62,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
 
     // Load user preferences on component mount
     const loadUserPreferences = useCallback(async () => {
-        if (!user?.id) return;
+        if (!user?.userId) return;
 
         try {
             const prefs = await preferencesService.getUserPreferences(user.userId.toString());
@@ -131,7 +131,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
 
     // Generate recipe
     const generateRecipe = async () => {
-        if (!user?.id) {
+        if (!user?.userId) {
             setError('Please log in to generate recipes.');
             return;
         }
@@ -160,7 +160,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
                 dietaryRestrictions: formData.dietaryRestrictions.length > 0 ? formData.dietaryRestrictions : undefined
             };
 
-            const response = await recipeService.generateRecipe(request);
+            const response = await recipeService.generateRecipe(request as RecipeGenerationParams);
             onRecipeGenerated(response.recipe);
 
             // Clear the message for next generation
