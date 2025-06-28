@@ -221,7 +221,7 @@ export async function generateRecipe(promptParams: Parameters<typeof generateRec
                 console.log(`\n🤖 [OpenAI] Attempt ${attempt + 1}/${MAX_RETRIES + 1} with temperature ${temperature}`);
 
                 const completion = await openai.chat.completions.create({
-                    model: "gpt-4o",
+                    model: "gpt-4o-mini",
                     messages: [
                         {
                             role: "system",
