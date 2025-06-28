@@ -73,10 +73,9 @@ export default function DashboardPage() {
             }
 
             try {
-                // Check if user has completed onboarding by fetching preferences
+                // Get user preferences
                 const preferences = await preferencesService.getUserPreferences(user.userId.toString());
-
-                // If we get here, user has preferences saved - show dashboard
+                console.log('📊 Dashboard loaded preferences:', preferences);
                 setUserPreferences(preferences);
 
                 // TODO: Fetch real user stats from API
@@ -91,15 +90,9 @@ export default function DashboardPage() {
                 });
 
             } catch (error: any) {
-                console.error('Error loading dashboard data:', error);
-                // If 404 error, user hasn't completed onboarding yet
-                if (error.response?.status === 404) {
-                    router.push('/onboarding');
-                    return;
-                }
-                // For other errors, still redirect to onboarding as fallback
-                router.push('/onboarding');
-                return;
+                console.error('❌ Dashboard error loading preferences:', error);
+                // Don't redirect to onboarding automatically - let user stay on dashboard
+                // They can click "Edit Preferences" if needed
             } finally {
                 setIsLoading(false);
             }

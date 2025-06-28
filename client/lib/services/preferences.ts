@@ -23,11 +23,23 @@ export const preferencesService = {
     async getUserPreferences(userId: string): Promise<UserPreferences> {
         try {
             const response = await preferencesApi.get(`/users/${userId}/preferences`);
+            console.log('✅ getUserPreferences SUCCESS:', response.data.data);
             return response.data.data;
         } catch (error: any) {
+            console.log('❌ getUserPreferences ERROR:', error.response?.status, error.response?.data);
             if (error.response?.status === 404) {
-                // User has no preferences yet - throw the error so caller knows
-                throw error;
+                // Return empty preferences if none exist yet
+                console.log('🔄 Returning default preferences for user:', userId);
+                return {
+                    userId,
+                    dietaryRestrictions: [],
+                    allergies: [],
+                    cuisinePreferences: [],
+                    spiceLevel: 'medium',
+                    maxCookingTime: 60,
+                    servingSize: 4,
+                    ingredientPreferences: []
+                };
             }
             throw error;
         }
@@ -47,17 +59,33 @@ export const preferencesService = {
 
     // Save user preferences (create or update as needed)
     async saveUserPreferences(userId: string, preferences: Partial<UserPreferences>): Promise<UserPreferences> {
+        console.log('💾 saveUserPreferences called for user:', userId, 'with data:', preferences);
         try {
             // Try to update first
-            return await this.updateUserPreferences(userId, preferences);
+            console.log('🔄 Trying to UPDATE preferences...');
+            const result = await this.updateUserPreferences(userId, preferences);
+            console.log('✅ UPDATE successful:', result);
+            return result;
         } catch (error: any) {
+            console.log('❌ UPDATE failed:', error.response?.status, error.response?.data);
             // If update fails with 404 (not found), try to create
             if (error.response?.status === 404) {
-                return await this.createUserPreferences(userId, preferences);
+                console.log('🔄 Trying to CREATE preferences...');
+                try {
+                    const result = await this.createUserPreferences(userId, preferences);
+                    console.log('✅ CREATE successful:', result);
+                    return result;
+                } catch (createError: any) {
+                    console.log('❌ CREATE failed:', createError.response?.status, createError.response?.data);
+                    throw createError;
+                }
             }
             // If create fails with 409 (conflict), try update again
             if (error.response?.status === 409) {
-                return await this.updateUserPreferences(userId, preferences);
+                console.log('🔄 409 conflict, trying UPDATE again...');
+                const result = await this.updateUserPreferences(userId, preferences);
+                console.log('✅ Second UPDATE successful:', result);
+                return result;
             }
             throw error;
         }
