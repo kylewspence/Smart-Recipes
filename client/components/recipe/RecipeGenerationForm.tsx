@@ -167,8 +167,21 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
             updateFormData({ message: '' });
         } catch (err: unknown) {
             console.error('Recipe generation failed:', err);
-            const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setError(errorMessage);
+            let errorMessage = 'An unexpected error occurred';
+
+            if (err instanceof Error) {
+                errorMessage = err.message;
+                // Add more specific error messages for common issues
+                if (err.message.includes('fetch')) {
+                    errorMessage = 'Unable to connect to the recipe server. Please try again later.';
+                } else if (err.message.includes('404')) {
+                    errorMessage = 'Recipe service is temporarily unavailable. Please try again later.';
+                } else if (err.message.includes('timeout')) {
+                    errorMessage = 'Request timed out. Please try again.';
+                }
+            }
+
+            setError(`Recipe generation failed: ${errorMessage}`);
         } finally {
             setIsLoading(false);
         }
