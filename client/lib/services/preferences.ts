@@ -26,17 +26,8 @@ export const preferencesService = {
             return response.data.data;
         } catch (error: any) {
             if (error.response?.status === 404) {
-                // Return empty preferences if none exist yet
-                return {
-                    userId,
-                    dietaryRestrictions: [],
-                    allergies: [],
-                    cuisinePreferences: [],
-                    spiceLevel: 'medium',
-                    maxCookingTime: 60,
-                    servingSize: 4,
-                    ingredientPreferences: []
-                };
+                // User has no preferences yet - throw the error so caller knows
+                throw error;
             }
             throw error;
         }

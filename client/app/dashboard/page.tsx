@@ -76,22 +76,7 @@ export default function DashboardPage() {
                 // Check if user has completed onboarding by fetching preferences
                 const preferences = await preferencesService.getUserPreferences(user.userId.toString());
 
-                // Check if this is a newly created user with no meaningful preferences
-                // Only redirect to onboarding if ALL preference fields are empty/default
-                const hasPreferences = (
-                    (preferences.dietaryRestrictions && preferences.dietaryRestrictions.length > 0) ||
-                    (preferences.allergies && preferences.allergies.length > 0) ||
-                    (preferences.cuisinePreferences && preferences.cuisinePreferences.length > 0) ||
-                    (preferences.spiceLevel && preferences.spiceLevel !== 'medium') ||
-                    (preferences.maxCookingTime && preferences.maxCookingTime !== 60) ||
-                    (preferences.servingSize && preferences.servingSize !== 4)
-                );
-
-                if (!hasPreferences) {
-                    router.push('/onboarding');
-                    return;
-                }
-
+                // If we get here, user has preferences saved - show dashboard
                 setUserPreferences(preferences);
 
                 // TODO: Fetch real user stats from API
@@ -105,9 +90,14 @@ export default function DashboardPage() {
                     streakDays: 3
                 });
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error loading dashboard data:', error);
-                // If error fetching preferences, likely user hasn't completed onboarding
+                // If 404 error, user hasn't completed onboarding yet
+                if (error.response?.status === 404) {
+                    router.push('/onboarding');
+                    return;
+                }
+                // For other errors, still redirect to onboarding as fallback
                 router.push('/onboarding');
                 return;
             } finally {
