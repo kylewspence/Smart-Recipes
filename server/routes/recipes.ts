@@ -156,23 +156,28 @@ router.post('/generate', async (req, res, next) => {
             const recipeId = recipeInsertResult.rows[0].recipeId;
             console.log('💾 [ROUTE] Recipe saved with ID:', recipeId);
 
-            // Save recipe ingredients
+            // Save recipe ingredients using proper upsert to avoid race conditions
             for (const ingredient of recipe.ingredients) {
-                // Check if ingredient exists, create if not
+                // First try to get existing ingredient, then insert if not found
                 let ingredientId;
-                const ingredientResult = await db.query(
-                    'SELECT "ingredientId" FROM "ingredients" WHERE LOWER("name") = LOWER($1)',
-                    [ingredient.name]
-                );
-
-                if (ingredientResult.rows.length === 0) {
-                    const newIngredientResult = await db.query(
+                try {
+                    // Try to insert new ingredient
+                    const insertResult = await db.query(
                         'INSERT INTO "ingredients" ("name", "categoryId") VALUES ($1, $2) RETURNING "ingredientId"',
                         [ingredient.name, 1] // Default categoryId (assuming 1 exists)
                     );
-                    ingredientId = newIngredientResult.rows[0].ingredientId;
-                } else {
-                    ingredientId = ingredientResult.rows[0].ingredientId;
+                    ingredientId = insertResult.rows[0].ingredientId;
+                } catch (error: any) {
+                    // If duplicate key error, get the existing ingredient
+                    if (error.code === '23505') {
+                        const existingResult = await db.query(
+                            'SELECT "ingredientId" FROM "ingredients" WHERE LOWER("name") = LOWER($1)',
+                            [ingredient.name]
+                        );
+                        ingredientId = existingResult.rows[0].ingredientId;
+                    } else {
+                        throw error; // Re-throw if it's not a duplicate key error
+                    }
                 }
 
                 // Add to recipe_ingredients
