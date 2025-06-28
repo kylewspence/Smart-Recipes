@@ -79,7 +79,7 @@ router.post('/generate', async (req, res, next) => {
 
         // Get user ingredient preferences
         const ingredientPrefsResult = await db.query(
-            `SELECT uip.*, i."name", i."category" 
+            `SELECT uip.*, i."name", i."categoryId" 
              FROM "userIngredientPreferences" uip
              JOIN "ingredients" i ON uip."ingredientId" = i."ingredientId"
              WHERE uip."userId" = $1`,

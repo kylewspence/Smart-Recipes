@@ -36,7 +36,7 @@ router.get('/:userId/preferences', validate(userIdSchema, 'params'), async (req,
 
         // Get ingredient preferences
         const ingredientPreferencesResult = await db.query(
-            `SELECT uip.*, i.name, i.category
+            `SELECT uip.*, i.name, i."categoryId"
              FROM "userIngredientPreferences" uip
              JOIN ingredients i ON uip."ingredientId" = i."ingredientId"
              WHERE uip."userId" = $1
@@ -226,11 +226,11 @@ router.get('/:userId/preferences/ingredients', validate(userIdSchema, 'params'),
         }
 
         const result = await db.query(
-            `SELECT uip.id, uip."ingredientId", uip.preference, i.name, i.category
+            `SELECT uip.id, uip."ingredientId", uip.preference, i.name, i."categoryId"
              FROM "userIngredientPreferences" uip
              JOIN ingredients i ON uip."ingredientId" = i."ingredientId"
              WHERE uip."userId" = $1
-             ORDER BY i.category, i.name`,
+             ORDER BY i."categoryId", i.name`,
             [userId]
         );
 
@@ -284,7 +284,7 @@ router.post('/:userId/preferences/ingredients', validateParamsAndBody(userIdSche
 
         // Get ingredient details for response
         const ingredientDetails = await db.query(
-            `SELECT uip.*, i.name, i.category
+            `SELECT uip.*, i.name, i."categoryId"
              FROM "userIngredientPreferences" uip
              JOIN ingredients i ON uip."ingredientId" = i."ingredientId"
              WHERE uip.id = $1`,
@@ -333,7 +333,7 @@ router.put('/:userId/preferences/ingredients/:ingredientId',
 
             // Get ingredient details for response
             const ingredientDetails = await db.query(
-                `SELECT uip.*, i.name, i.category
+                `SELECT uip.*, i.name, i."categoryId"
                  FROM "userIngredientPreferences" uip
                  JOIN ingredients i ON uip."ingredientId" = i."ingredientId"
                  WHERE uip.id = $1`,
