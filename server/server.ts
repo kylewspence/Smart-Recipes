@@ -12,6 +12,7 @@ import recipeRoutes from './routes/recipes';
 import preferencesRoutes from './routes/preferences';
 import ingredientsRoutes from './routes/ingredients';
 import searchRoutes from './routes/search';
+import searchDebugRoutes from './routes/search-debug';
 import recommendationsRoutes from './routes/recommendations';
 import migrationsRoutes from './routes/migrations';
 import databaseRoutes from './routes/database';
@@ -130,6 +131,9 @@ app.use('/api/auth', rateLimiters.auth, authRoutes);
 
 // Search routes with search-specific rate limiting
 app.use('/api/search', rateLimiters.search, searchRoutes);
+
+// Debug search routes (no rate limiting for debugging)
+app.use('/api/search', searchDebugRoutes);
 
 // Admin/Database routes with strict rate limiting
 app.use('/api/database', rateLimiters.admin, databaseRoutes);

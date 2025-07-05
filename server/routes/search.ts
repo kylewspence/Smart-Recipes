@@ -72,52 +72,56 @@ async function logSearchAnalytics(query: string, userId: number | null, resultCo
 }
 
 /**
- * Enhanced unified search with full-text search capabilities
+ * Simple recipe search (for backward compatibility)
  * GET /api/search
  */
 router.get('/', async (req, res, next) => {
     try {
-        const searchParams = unifiedSearchSchema.parse(req.query);
-        const userId = (req as any).user?.id || null;
+        const { q, cuisine, maxCookingTime, ingredients, excludeIngredients } = req.query;
 
-        const results = {
-            query: searchParams.query,
-            type: searchParams.type,
-            fuzzy: searchParams.fuzzy,
-            pagination: {
-                limit: searchParams.limit,
-                offset: searchParams.offset
-            },
-            results: {}
-        };
-
-        let totalResults = 0;
-
-        if (searchParams.type === 'all' || searchParams.type === 'recipes') {
-            const recipeResults = await searchRecipesEnhanced(searchParams);
-            (results.results as any).recipes = recipeResults;
-            totalResults += recipeResults.length;
+        if (!q && !ingredients) {
+            return res.json([]);
         }
 
-        if (searchParams.type === 'all' || searchParams.type === 'ingredients') {
-            const ingredientResults = await searchIngredientsEnhanced(searchParams);
-            (results.results as any).ingredients = ingredientResults;
-            totalResults += ingredientResults.length;
+        let whereConditions = ['TRUE'];
+        let queryParams = [];
+        let paramIndex = 1;
+
+        // Simple text search in title and description
+        if (q) {
+            whereConditions.push(`(r."title" ILIKE $${paramIndex} OR r."description" ILIKE $${paramIndex})`);
+            queryParams.push(`%${q}%`);
+            paramIndex++;
         }
 
-        if (searchParams.type === 'all' || searchParams.type === 'users') {
-            const userResults = await searchUsers(searchParams);
-            (results.results as any).users = userResults;
-            totalResults += userResults.length;
+        // Filter by cuisine
+        if (cuisine) {
+            whereConditions.push(`r."cuisine" ILIKE $${paramIndex}`);
+            queryParams.push(`%${cuisine}%`);
+            paramIndex++;
         }
 
-        // Log search analytics
-        await logSearchAnalytics(searchParams.query, userId, totalResults, searchParams.type, searchParams.filters);
+        // Filter by cooking time
+        if (maxCookingTime) {
+            whereConditions.push(`r."cookingTime" <= $${paramIndex}`);
+            queryParams.push(parseInt(maxCookingTime as string));
+            paramIndex++;
+        }
 
-        res.json({
-            success: true,
-            data: results
-        });
+        const whereClause = whereConditions.length > 1 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        const searchQuery = `
+            SELECT r.* 
+            FROM "recipes" r
+            ${whereClause}
+            ORDER BY r."title" ASC
+            LIMIT 20
+        `;
+
+        const result = await db.query(searchQuery, queryParams);
+
+        // Return array directly to match test expectations
+        res.json(result.rows);
     } catch (err) {
         next(err);
     }

@@ -1,471 +1,501 @@
+#!/usr/bin/env node
+
+/**
+ * Smart Recipes Comprehensive System Audit
+ * 
+ * This script tests ALL API endpoints and functionality to ensure everything
+ * is working correctly and synced with the database.
+ */
+
+const axios = require('axios');
 const fs = require('fs');
-const path = require('path');
 
-// Test configuration
-const BASE_URL = 'http://localhost:3001';
-const TEST_USER = {
-    name: 'Test User',
-    email: 'test@example.com',
-    password: 'TestPassword123!'
+// Configuration
+const BASE_URL = 'http://localhost:3001/api';
+const TEST_EMAIL = 'audit-test@smartrecipes.com';
+const TEST_PASSWORD = 'AuditTest123!';
+const TEST_NAME = 'Audit Test User';
+
+// Test results tracking
+const results = {
+    passed: 0,
+    failed: 0,
+    tests: [],
+    errors: []
 };
 
-// Test results storage
-let testResults = [];
-let testUser = null;
-let authToken = null;
-
-// Utility functions
-const log = (message, type = 'info') => {
+// Helper functions
+function log(message, type = 'info') {
     const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
-    console.log(logMessage);
-};
+    const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+    console.log(`${prefix} [${timestamp}] ${message}`);
+}
 
-const addTestResult = (endpoint, method, status, success, details = '', error = null) => {
-    testResults.push({
-        endpoint,
-        method,
-        status,
-        success,
-        details,
-        error: error ? error.message : null,
-        timestamp: new Date().toISOString()
-    });
-};
-
-const makeRequest = async (endpoint, method = 'GET', body = null, headers = {}) => {
-    const url = `${BASE_URL}${endpoint}`;
-    const options = {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers
-        }
-    };
-
-    if (body) {
-        options.body = JSON.stringify(body);
+function logTest(testName, passed, details = '') {
+    results.tests.push({ testName, passed, details, timestamp: new Date().toISOString() });
+    if (passed) {
+        results.passed++;
+        log(`✅ PASS: ${testName}${details ? ` - ${details}` : ''}`, 'success');
+    } else {
+        results.failed++;
+        log(`❌ FAIL: ${testName}${details ? ` - ${details}` : ''}`, 'error');
+        results.errors.push(`${testName}: ${details}`);
     }
+}
 
-    if (authToken) {
-        options.headers.Authorization = `Bearer ${authToken}`;
-    }
-
+async function makeRequest(method, endpoint, data = null, headers = {}) {
     try {
-        const response = await fetch(url, options);
-        const data = await response.json();
-        return {
-            status: response.status,
-            success: response.ok,
-            data
+        const config = {
+            method,
+            url: `${BASE_URL}${endpoint}`,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
+            }
         };
+
+        if (data) {
+            config.data = data;
+        }
+
+        const response = await axios(config);
+        return { success: true, data: response.data, status: response.status };
     } catch (error) {
         return {
-            status: 0,
             success: false,
-            error: error.message
+            error: error.response?.data || error.message,
+            status: error.response?.status || 500
         };
     }
-};
+}
 
-// Test suites
-const testAuthentication = async () => {
-    log('Testing Authentication Endpoints...');
+// Test categories
+async function testHealthAndConnectivity() {
+    log('\n🔍 Testing Health and Connectivity...');
+
+    // Test basic health check
+    const health = await makeRequest('GET', '/health');
+    logTest('API Health Check', health.success && health.data?.success === true,
+        health.success ? `Status: ${health.data.status}` : health.error);
+
+    // Test database health
+    const dbHealth = await makeRequest('GET', '/database/health');
+    logTest('Database Health Check', dbHealth.success && dbHealth.data?.success === true,
+        dbHealth.success ? `DB Status: ${dbHealth.data.status}` : dbHealth.error);
+
+    // Test 404 handling
+    const notFound = await makeRequest('GET', '/nonexistent-endpoint');
+    logTest('404 Error Handling', notFound.status === 404 && notFound.error?.success === false,
+        notFound.status === 404 ? 'Correctly returns 404' : `Unexpected status: ${notFound.status}`);
+}
+
+async function testAuthentication() {
+    log('\n🔐 Testing Authentication System...');
+
+    // Test auth health
+    const authTest = await makeRequest('GET', '/auth/test');
+    logTest('Auth Database Connection', authTest.success && authTest.data?.success === true,
+        authTest.success ? `User count: ${authTest.data.userCount}` : authTest.error);
 
     // Test registration
-    try {
-        const registerResult = await makeRequest('/api/auth/register', 'POST', TEST_USER);
-        addTestResult('/api/auth/register', 'POST', registerResult.status, registerResult.success,
-            registerResult.success ? 'User registered successfully' : 'Registration failed',
-            registerResult.error ? new Error(registerResult.error) : null);
+    const register = await makeRequest('POST', '/auth/register', {
+        email: TEST_EMAIL,
+        name: TEST_NAME,
+        password: TEST_PASSWORD,
+        confirmPassword: TEST_PASSWORD
+    });
 
-        if (registerResult.success) {
-            testUser = registerResult.data.user;
-            authToken = registerResult.data.token;
-        }
-    } catch (error) {
-        addTestResult('/api/auth/register', 'POST', 0, false, 'Registration request failed', error);
-    }
+    // Registration might fail if user exists, that's okay
+    const registrationWorking = register.success || (register.status === 400 && register.error?.error?.includes('exists'));
+    logTest('User Registration', registrationWorking,
+        register.success ? 'New user created' : 'User already exists (expected)');
 
     // Test login
-    try {
-        const loginResult = await makeRequest('/api/auth/login', 'POST', {
-            email: TEST_USER.email,
-            password: TEST_USER.password
-        });
-        addTestResult('/api/auth/login', 'POST', loginResult.status, loginResult.success,
-            loginResult.success ? 'Login successful' : 'Login failed',
-            loginResult.error ? new Error(loginResult.error) : null);
+    const login = await makeRequest('POST', '/auth/login', {
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD
+    });
+    logTest('User Login', login.success && login.data?.token,
+        login.success ? 'Token received' : login.error);
 
-        if (loginResult.success && !authToken) {
-            authToken = loginResult.data.token;
-            testUser = loginResult.data.user;
-        }
-    } catch (error) {
-        addTestResult('/api/auth/login', 'POST', 0, false, 'Login request failed', error);
+    if (!login.success) {
+        throw new Error('Cannot proceed without authentication token');
     }
 
-    // Test auth/me
-    try {
-        const meResult = await makeRequest('/api/auth/me', 'GET');
-        addTestResult('/api/auth/me', 'GET', meResult.status, meResult.success,
-            meResult.success ? 'User profile retrieved' : 'Profile retrieval failed',
-            meResult.error ? new Error(meResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/auth/me', 'GET', 0, false, 'Profile request failed', error);
-    }
-};
+    global.authToken = login.data.token;
+    global.testUserId = login.data.user?.userId;
 
-const testUserEndpoints = async () => {
-    log('Testing User Endpoints...');
+    // Test protected route
+    const me = await makeRequest('GET', '/auth/me', null, {
+        'Authorization': `Bearer ${global.authToken}`
+    });
+    logTest('Protected Route Access', me.success && me.data?.user,
+        me.success ? `User: ${me.data.user.name}` : me.error);
 
-    if (!testUser) {
-        log('No test user available, skipping user tests', 'warn');
+    return global.authToken;
+}
+
+async function testUserManagement() {
+    log('\n👥 Testing User Management...');
+
+    if (!global.authToken) {
+        logTest('User Management', false, 'No auth token available');
         return;
     }
 
-    // Test get user by ID
-    try {
-        const userResult = await makeRequest(`/api/users/${testUser.userId}`, 'GET');
-        addTestResult(`/api/users/${testUser.userId}`, 'GET', userResult.status, userResult.success,
-            userResult.success ? 'User data retrieved' : 'User retrieval failed',
-            userResult.error ? new Error(userResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/users/${testUser.userId}`, 'GET', 0, false, 'User request failed', error);
-    }
-};
+    const headers = { 'Authorization': `Bearer ${global.authToken}` };
 
-const testPreferencesEndpoints = async () => {
-    log('Testing Preferences Endpoints...');
+    // Test getting all users (might be admin only)
+    const users = await makeRequest('GET', '/users', null, headers);
+    logTest('Get Users List', users.success || users.status === 403,
+        users.success ? `Found ${users.data?.length || 0} users` :
+            users.status === 403 ? 'Correctly restricted (admin only)' : users.error);
+}
 
-    if (!testUser) {
-        log('No test user available, skipping preferences tests', 'warn');
+async function testPreferences() {
+    log('\n⚙️ Testing User Preferences...');
+
+    if (!global.authToken || !global.testUserId) {
+        logTest('User Preferences', false, 'No auth token or user ID available');
         return;
     }
 
+    const headers = { 'Authorization': `Bearer ${global.authToken}` };
+
+    // Test getting preferences (might not exist initially)
+    const getPrefs = await makeRequest('GET', `/users/${global.testUserId}/preferences`, null, headers);
+    logTest('Get User Preferences', getPrefs.success || getPrefs.status === 404,
+        getPrefs.success ? 'Preferences loaded' :
+            getPrefs.status === 404 ? 'No preferences found (expected for new user)' : getPrefs.error);
+
+    // Test setting preferences
     const testPreferences = {
         dietaryRestrictions: ['vegetarian'],
         allergies: ['nuts'],
         cuisinePreferences: ['italian', 'mexican'],
         spiceLevel: 'medium',
-        maxCookingTime: 45,
-        servingSize: 2
+        cookingSkillLevel: 'intermediate',
+        cookingTime: 30,
+        servingSize: 4,
+        dislikedIngredients: ['mushrooms'],
+        favoriteIngredients: ['tomatoes', 'cheese']
     };
 
-    // Test create preferences
-    try {
-        const createResult = await makeRequest(`/api/preferences/${testUser.userId}/preferences`, 'POST', testPreferences);
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'POST', createResult.status, createResult.success,
-            createResult.success ? 'Preferences created' : 'Preferences creation failed',
-            createResult.error ? new Error(createResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'POST', 0, false, 'Preferences creation request failed', error);
-    }
+    const setPrefs = await makeRequest('POST', `/users/${global.testUserId}/preferences`, testPreferences, headers);
+    logTest('Set User Preferences', setPrefs.success && setPrefs.data?.success,
+        setPrefs.success ? 'Preferences saved successfully' : setPrefs.error);
 
-    // Test get preferences
-    try {
-        const getResult = await makeRequest(`/api/preferences/${testUser.userId}/preferences`, 'GET');
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'GET', getResult.status, getResult.success,
-            getResult.success ? 'Preferences retrieved' : 'Preferences retrieval failed',
-            getResult.error ? new Error(getResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'GET', 0, false, 'Preferences retrieval request failed', error);
-    }
+    // Test getting preferences after setting them
+    const getPrefsAfter = await makeRequest('GET', `/users/${global.testUserId}/preferences`, null, headers);
+    logTest('Get Preferences After Setting', getPrefsAfter.success && getPrefsAfter.data?.dietaryRestrictions,
+        getPrefsAfter.success ? `Found ${getPrefsAfter.data.dietaryRestrictions?.length || 0} dietary restrictions` : getPrefsAfter.error);
+}
 
-    // Test update preferences
-    try {
-        const updateResult = await makeRequest(`/api/preferences/${testUser.userId}/preferences`, 'PUT', {
-            ...testPreferences,
-            spiceLevel: 'hot'
-        });
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'PUT', updateResult.status, updateResult.success,
-            updateResult.success ? 'Preferences updated' : 'Preferences update failed',
-            updateResult.error ? new Error(updateResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/preferences/${testUser.userId}/preferences`, 'PUT', 0, false, 'Preferences update request failed', error);
-    }
-};
+async function testIngredients() {
+    log('\n🥕 Testing Ingredients System...');
 
-const testRecipeEndpoints = async () => {
-    log('Testing Recipe Endpoints...');
+    // Test getting all ingredients
+    const ingredients = await makeRequest('GET', '/ingredients');
+    logTest('Get All Ingredients', ingredients.success && Array.isArray(ingredients.data),
+        ingredients.success ? `Found ${ingredients.data.length} ingredients` : ingredients.error);
 
-    if (!testUser) {
-        log('No test user available, skipping recipe tests', 'warn');
+    // Test ingredient search
+    const searchIngredients = await makeRequest('GET', '/ingredients?query=tomato&limit=5');
+    logTest('Search Ingredients', searchIngredients.success && Array.isArray(searchIngredients.data),
+        searchIngredients.success ? `Found ${searchIngredients.data.length} tomato-related ingredients` : searchIngredients.error);
+
+    // Test ingredient categories
+    const categories = await makeRequest('GET', '/ingredients?category=vegetables&limit=10');
+    logTest('Get Ingredients by Category', categories.success && Array.isArray(categories.data),
+        categories.success ? `Found ${categories.data.length} vegetables` : categories.error);
+}
+
+async function testRecipes() {
+    log('\n🍳 Testing Recipe System...');
+
+    if (!global.authToken || !global.testUserId) {
+        logTest('Recipe System', false, 'No auth token or user ID available');
         return;
     }
 
-    const testRecipeRequest = {
-        userId: testUser.userId,
-        mealType: 'dinner',
-        ingredients: ['chicken', 'rice', 'vegetables'],
-        dietaryRestrictions: ['none'],
-        cuisinePreference: 'italian',
-        cookingTime: 30,
-        servingSize: 2
-    };
+    const headers = { 'Authorization': `Bearer ${global.authToken}` };
 
-    let testRecipeId = null;
+    // Test getting all recipes
+    const recipes = await makeRequest('GET', '/recipes', null, headers);
+    logTest('Get All Recipes', recipes.success && Array.isArray(recipes.data),
+        recipes.success ? `Found ${recipes.data.length} recipes` : recipes.error);
 
     // Test recipe generation
-    try {
-        const generateResult = await makeRequest('/api/recipes/generate', 'POST', testRecipeRequest);
-        addTestResult('/api/recipes/generate', 'POST', generateResult.status, generateResult.success,
-            generateResult.success ? 'Recipe generated successfully' : 'Recipe generation failed',
-            generateResult.error ? new Error(generateResult.error) : null);
+    const generationRequest = {
+        mealType: 'dinner',
+        cuisineType: 'italian',
+        ingredients: ['tomatoes', 'pasta', 'cheese'],
+        servingSize: 4,
+        cookingTime: 30,
+        spiceLevel: 'medium'
+    };
 
-        if (generateResult.success && generateResult.data.recipe) {
-            testRecipeId = generateResult.data.recipe.id || generateResult.data.recipe.recipeId;
-        }
-    } catch (error) {
-        addTestResult('/api/recipes/generate', 'POST', 0, false, 'Recipe generation request failed', error);
-    }
+    const generateRecipe = await makeRequest('POST', '/recipes/generate', generationRequest, headers);
+    logTest('Generate Recipe', generateRecipe.success && generateRecipe.data?.recipe,
+        generateRecipe.success ? `Generated: ${generateRecipe.data.recipe?.title}` : generateRecipe.error);
 
-    // Test get user recipes
-    try {
-        const recipesResult = await makeRequest(`/api/recipes/user/${testUser.userId}`, 'GET');
-        addTestResult(`/api/recipes/user/${testUser.userId}`, 'GET', recipesResult.status, recipesResult.success,
-            recipesResult.success ? `Retrieved ${recipesResult.data.recipes?.length || 0} recipes` : 'Recipe retrieval failed',
-            recipesResult.error ? new Error(recipesResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/recipes/user/${testUser.userId}`, 'GET', 0, false, 'Recipe retrieval request failed', error);
-    }
+    if (generateRecipe.success && generateRecipe.data?.recipe?.id) {
+        global.testRecipeId = generateRecipe.data.recipe.id;
 
-    // Test favorite/unfavorite if we have a recipe
-    if (testRecipeId) {
-        try {
-            const favoriteResult = await makeRequest(`/api/recipes/${testRecipeId}/favorite`, 'POST', { userId: testUser.userId });
-            addTestResult(`/api/recipes/${testRecipeId}/favorite`, 'POST', favoriteResult.status, favoriteResult.success,
-                favoriteResult.success ? 'Recipe favorited' : 'Recipe favorite failed',
-                favoriteResult.error ? new Error(favoriteResult.error) : null);
-        } catch (error) {
-            addTestResult(`/api/recipes/${testRecipeId}/favorite`, 'POST', 0, false, 'Recipe favorite request failed', error);
-        }
+        // Test getting specific recipe
+        const getRecipe = await makeRequest('GET', `/recipes/${global.testRecipeId}`, null, headers);
+        logTest('Get Specific Recipe', getRecipe.success && getRecipe.data?.id,
+            getRecipe.success ? `Recipe: ${getRecipe.data.title}` : getRecipe.error);
 
-        try {
-            const unfavoriteResult = await makeRequest(`/api/recipes/${testRecipeId}/unfavorite`, 'POST', { userId: testUser.userId });
-            addTestResult(`/api/recipes/${testRecipeId}/unfavorite`, 'POST', unfavoriteResult.status, unfavoriteResult.success,
-                unfavoriteResult.success ? 'Recipe unfavorited' : 'Recipe unfavorite failed',
-                unfavoriteResult.error ? new Error(unfavoriteResult.error) : null);
-        } catch (error) {
-            addTestResult(`/api/recipes/${testRecipeId}/unfavorite`, 'POST', 0, false, 'Recipe unfavorite request failed', error);
+        // Test favoriting recipe
+        const favoriteRecipe = await makeRequest('POST', `/recipes/${global.testRecipeId}/favorite`, { userId: global.testUserId }, headers);
+        logTest('Favorite Recipe', favoriteRecipe.success && favoriteRecipe.data?.success,
+            favoriteRecipe.success ? 'Recipe favorited' : favoriteRecipe.error);
+
+        // Test unfavoriting recipe
+        const unfavoriteRecipe = await makeRequest('DELETE', `/recipes/${global.testRecipeId}/favorite`, { userId: global.testUserId }, headers);
+        logTest('Unfavorite Recipe', unfavoriteRecipe.success && unfavoriteRecipe.data?.success,
+            unfavoriteRecipe.success ? 'Recipe unfavorited' : unfavoriteRecipe.error);
+
+        // Test getting recipe substitutions
+        if (getRecipe.success && getRecipe.data?.ingredients?.length > 0) {
+            const firstIngredientId = getRecipe.data.ingredients[0].ingredientId || getRecipe.data.ingredients[0].id;
+            if (firstIngredientId) {
+                const substitutions = await makeRequest('GET', `/recipes/${global.testRecipeId}/substitutions/${firstIngredientId}`, null, headers);
+                logTest('Get Recipe Substitutions', substitutions.success && Array.isArray(substitutions.data),
+                    substitutions.success ? `Found ${substitutions.data.length} substitutions` : substitutions.error);
+            }
         }
     }
 
-    // Test recipe search
-    try {
-        const searchResult = await makeRequest('/api/recipes/search', 'GET');
-        addTestResult('/api/recipes/search', 'GET', searchResult.status, searchResult.success,
-            searchResult.success ? `Found ${searchResult.data.recipes?.length || 0} recipes` : 'Recipe search failed',
-            searchResult.error ? new Error(searchResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/recipes/search', 'GET', 0, false, 'Recipe search request failed', error);
-    }
-};
+    // Test getting user's saved recipes
+    const savedRecipes = await makeRequest('GET', '/recipes/saved', null, headers);
+    logTest('Get Saved Recipes', savedRecipes.success || savedRecipes.status === 404,
+        savedRecipes.success ? `Found ${savedRecipes.data?.length || 0} saved recipes` :
+            savedRecipes.status === 404 ? 'No saved recipes (expected)' : savedRecipes.error);
 
-const testSearchEndpoints = async () => {
-    log('Testing Search Endpoints...');
+    // Test getting user's favorite recipes
+    const favoriteRecipes = await makeRequest('GET', '/recipes/favorites', null, headers);
+    logTest('Get Favorite Recipes', favoriteRecipes.success || favoriteRecipes.status === 404,
+        favoriteRecipes.success ? `Found ${favoriteRecipes.data?.length || 0} favorite recipes` :
+            favoriteRecipes.status === 404 ? 'No favorite recipes (expected)' : favoriteRecipes.error);
+}
 
-    // Test unified search
-    try {
-        const searchResult = await makeRequest('/api/search/unified?query=chicken', 'GET');
-        addTestResult('/api/search/unified', 'GET', searchResult.status, searchResult.success,
-            searchResult.success ? 'Unified search successful' : 'Unified search failed',
-            searchResult.error ? new Error(searchResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/search/unified', 'GET', 0, false, 'Unified search request failed', error);
-    }
-};
+async function testSearch() {
+    log('\n🔍 Testing Search System...');
 
-const testRecommendationEndpoints = async () => {
-    log('Testing Recommendation Endpoints...');
+    // Test basic search
+    const basicSearch = await makeRequest('GET', '/search?q=pasta');
+    logTest('Basic Recipe Search', basicSearch.success && Array.isArray(basicSearch.data),
+        basicSearch.success ? `Found ${basicSearch.data.length} pasta recipes` : basicSearch.error);
 
-    if (!testUser) {
-        log('No test user available, skipping recommendation tests', 'warn');
+    // Test advanced search
+    const advancedSearch = await makeRequest('GET', '/search?q=chicken&cuisine=italian&maxCookingTime=60');
+    logTest('Advanced Recipe Search', advancedSearch.success && Array.isArray(advancedSearch.data),
+        advancedSearch.success ? `Found ${advancedSearch.data.length} Italian chicken recipes` : advancedSearch.error);
+
+    // Test ingredient-based search
+    const ingredientSearch = await makeRequest('GET', '/search?ingredients=tomato,cheese&excludeIngredients=mushroom');
+    logTest('Ingredient-based Search', ingredientSearch.success && Array.isArray(ingredientSearch.data),
+        ingredientSearch.success ? `Found ${ingredientSearch.data.length} recipes with tomato and cheese, no mushroom` : ingredientSearch.error);
+}
+
+async function testRecommendations() {
+    log('\n🎯 Testing Recommendation System...');
+
+    if (!global.authToken || !global.testUserId) {
+        logTest('Recommendation System', false, 'No auth token or user ID available');
         return;
     }
 
-    // Test get recommendations
-    try {
-        const recommendationsResult = await makeRequest(`/api/recommendations/${testUser.userId}`, 'GET');
-        addTestResult(`/api/recommendations/${testUser.userId}`, 'GET', recommendationsResult.status, recommendationsResult.success,
-            recommendationsResult.success ? 'Recommendations retrieved' : 'Recommendations retrieval failed',
-            recommendationsResult.error ? new Error(recommendationsResult.error) : null);
-    } catch (error) {
-        addTestResult(`/api/recommendations/${testUser.userId}`, 'GET', 0, false, 'Recommendations request failed', error);
+    const headers = { 'Authorization': `Bearer ${global.authToken}` };
+
+    // Test getting recommendations
+    const recommendations = await makeRequest('GET', '/recommendations', null, headers);
+    logTest('Get Recipe Recommendations', recommendations.success && Array.isArray(recommendations.data),
+        recommendations.success ? `Found ${recommendations.data.length} recommended recipes` : recommendations.error);
+
+    // Test personalized recommendations
+    const personalizedRecs = await makeRequest('GET', `/recommendations?userId=${global.testUserId}&limit=5`, null, headers);
+    logTest('Get Personalized Recommendations', personalizedRecs.success && Array.isArray(personalizedRecs.data),
+        personalizedRecs.success ? `Found ${personalizedRecs.data.length} personalized recommendations` : personalizedRecs.error);
+}
+
+async function testAnalytics() {
+    log('\n📊 Testing Analytics System...');
+
+    // Test analytics health
+    const analyticsHealth = await makeRequest('GET', '/analytics/health');
+    logTest('Analytics Health Check', analyticsHealth.success && analyticsHealth.data?.status === 'healthy',
+        analyticsHealth.success ? `Analytics: ${analyticsHealth.data.status}` : analyticsHealth.error);
+
+    // Test posting analytics event
+    const analyticsEvent = {
+        type: 'event',
+        data: {
+            action: 'recipe_generated',
+            category: 'recipes',
+            label: 'audit_test',
+            value: 1,
+            userId: global.testUserId?.toString(),
+            sessionId: 'audit-session-123'
+        },
+        timestamp: Date.now()
+    };
+
+    const postEvent = await makeRequest('POST', '/analytics/events', analyticsEvent);
+    logTest('Post Analytics Event', postEvent.success && postEvent.data?.success,
+        postEvent.success ? 'Event logged successfully' : postEvent.error);
+
+    // Test getting analytics data (might require admin auth)
+    const analyticsData = await makeRequest('GET', '/analytics/summary?days=7');
+    logTest('Get Analytics Summary', analyticsData.success || analyticsData.status === 403,
+        analyticsData.success ? 'Analytics data retrieved' :
+            analyticsData.status === 403 ? 'Correctly restricted (admin only)' : analyticsData.error);
+}
+
+async function testSecurity() {
+    log('\n🛡️ Testing Security Features...');
+
+    // Test security status
+    const securityTest = await makeRequest('GET', '/security/test');
+    logTest('Security Test Endpoint', securityTest.success && securityTest.data?.securityStatus,
+        securityTest.success ? `Security: ${securityTest.data.securityStatus}` : securityTest.error);
+
+    // Test rate limiting status
+    const rateLimitStatus = await makeRequest('GET', '/rate-limit-status');
+    logTest('Rate Limiting Status', rateLimitStatus.success && rateLimitStatus.data,
+        rateLimitStatus.success ? 'Rate limiting active' : rateLimitStatus.error);
+
+    // Test input sanitization (this should be blocked)
+    const maliciousInput = await makeRequest('POST', '/auth/login', {
+        email: '<script>alert("xss")</script>',
+        password: 'test'
+    });
+    logTest('XSS Protection', !maliciousInput.success && maliciousInput.status >= 400,
+        !maliciousInput.success ? 'Malicious input correctly blocked' : 'XSS protection may be compromised');
+}
+
+async function testPrivacy() {
+    log('\n🔒 Testing Privacy and GDPR Features...');
+
+    // Test privacy policy endpoint
+    const privacyPolicy = await makeRequest('GET', '/privacy/policy');
+    logTest('Privacy Policy Endpoint', privacyPolicy.success && privacyPolicy.data?.policy,
+        privacyPolicy.success ? 'Privacy policy available' : privacyPolicy.error);
+
+    // Test cookie consent endpoint
+    const cookieConsent = await makeRequest('GET', '/privacy/cookie-consent');
+    logTest('Cookie Consent Endpoint', cookieConsent.success && cookieConsent.data?.consent,
+        cookieConsent.success ? 'Cookie consent system working' : cookieConsent.error);
+
+    if (global.authToken) {
+        const headers = { 'Authorization': `Bearer ${global.authToken}` };
+
+        // Test data export request
+        const dataExport = await makeRequest('GET', '/privacy/data-export?format=json', null, headers);
+        logTest('GDPR Data Export', dataExport.success && dataExport.data?.data,
+            dataExport.success ? 'User data export working' : dataExport.error);
     }
-};
+}
 
-const testDatabaseEndpoints = async () => {
-    log('Testing Database Endpoints...');
-
-    // Test database health
-    try {
-        const healthResult = await makeRequest('/api/database/health', 'GET');
-        addTestResult('/api/database/health', 'GET', healthResult.status, healthResult.success,
-            healthResult.success ? 'Database health check passed' : 'Database health check failed',
-            healthResult.error ? new Error(healthResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/database/health', 'GET', 0, false, 'Database health request failed', error);
-    }
-
-    // Test database pool stats
-    try {
-        const poolResult = await makeRequest('/api/database/pool-stats', 'GET');
-        addTestResult('/api/database/pool-stats', 'GET', poolResult.status, poolResult.success,
-            poolResult.success ? 'Database pool stats retrieved' : 'Database pool stats failed',
-            poolResult.error ? new Error(poolResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/database/pool-stats', 'GET', 0, false, 'Database pool stats request failed', error);
-    }
-};
-
-const testSecurityEndpoints = async () => {
-    log('Testing Security Endpoints...');
-
-    // Test security test endpoint
-    try {
-        const securityResult = await makeRequest('/api/security/test', 'GET');
-        addTestResult('/api/security/test', 'GET', securityResult.status, securityResult.success,
-            securityResult.success ? 'Security test passed' : 'Security test failed',
-            securityResult.error ? new Error(securityResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/security/test', 'GET', 0, false, 'Security test request failed', error);
-    }
-};
-
-const testPrivacyEndpoints = async () => {
-    log('Testing Privacy Endpoints...');
-
-    // Test privacy policy
-    try {
-        const policyResult = await makeRequest('/api/privacy/policy', 'GET');
-        addTestResult('/api/privacy/policy', 'GET', policyResult.status, policyResult.success,
-            policyResult.success ? 'Privacy policy retrieved' : 'Privacy policy retrieval failed',
-            policyResult.error ? new Error(policyResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/privacy/policy', 'GET', 0, false, 'Privacy policy request failed', error);
-    }
-
-    // Test cookie consent
-    try {
-        const consentResult = await makeRequest('/api/privacy/cookie-consent', 'GET');
-        addTestResult('/api/privacy/cookie-consent', 'GET', consentResult.status, consentResult.success,
-            consentResult.success ? 'Cookie consent retrieved' : 'Cookie consent retrieval failed',
-            consentResult.error ? new Error(consentResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/privacy/cookie-consent', 'GET', 0, false, 'Cookie consent request failed', error);
-    }
-};
-
-const testMigrationEndpoints = async () => {
-    log('Testing Migration Endpoints...');
+async function testMigrations() {
+    log('\n🔄 Testing Database Migrations...');
 
     // Test migration status
-    try {
-        const statusResult = await makeRequest('/api/migrations/status', 'GET');
-        addTestResult('/api/migrations/status', 'GET', statusResult.status, statusResult.success,
-            statusResult.success ? 'Migration status retrieved' : 'Migration status retrieval failed',
-            statusResult.error ? new Error(statusResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/migrations/status', 'GET', 0, false, 'Migration status request failed', error);
-    }
+    const migrationStatus = await makeRequest('GET', '/migrations/status');
+    logTest('Migration Status Check', migrationStatus.success && migrationStatus.data?.data,
+        migrationStatus.success ? `Migrations: ${migrationStatus.data.data.appliedMigrations?.length || 0} applied` : migrationStatus.error);
 
     // Test migration validation
-    try {
-        const validateResult = await makeRequest('/api/migrations/validate', 'GET');
-        addTestResult('/api/migrations/validate', 'GET', validateResult.status, validateResult.success,
-            validateResult.success ? 'Migration validation passed' : 'Migration validation failed',
-            validateResult.error ? new Error(validateResult.error) : null);
-    } catch (error) {
-        addTestResult('/api/migrations/validate', 'GET', 0, false, 'Migration validation request failed', error);
-    }
-};
+    const migrationValidation = await makeRequest('GET', '/migrations/validate');
+    logTest('Migration Validation', migrationValidation.success && migrationValidation.data?.data?.valid,
+        migrationValidation.success ? 'All migrations valid' : migrationValidation.error);
+}
 
-const generateReport = () => {
-    log('Generating comprehensive test report...');
-
-    const summary = {
-        total: testResults.length,
-        passed: testResults.filter(r => r.success).length,
-        failed: testResults.filter(r => !r.success).length,
-        endpoints: [...new Set(testResults.map(r => r.endpoint))].length
-    };
+// Generate comprehensive report
+function generateReport() {
+    log('\n📋 Generating Comprehensive Report...');
 
     const report = {
-        summary,
-        timestamp: new Date().toISOString(),
-        testUser: testUser ? { userId: testUser.userId, email: testUser.email } : null,
-        results: testResults,
-        failedTests: testResults.filter(r => !r.success),
-        criticalIssues: testResults.filter(r => !r.success && r.status >= 500),
-        clientErrors: testResults.filter(r => !r.success && r.status >= 400 && r.status < 500),
-        networkErrors: testResults.filter(r => !r.success && r.status === 0)
+        summary: {
+            totalTests: results.tests.length,
+            passed: results.passed,
+            failed: results.failed,
+            successRate: `${((results.passed / results.tests.length) * 100).toFixed(1)}%`,
+            timestamp: new Date().toISOString()
+        },
+        testResults: results.tests,
+        errors: results.errors,
+        recommendations: []
     };
 
-    // Write detailed report to file
-    fs.writeFileSync('test-audit-report.json', JSON.stringify(report, null, 2));
-
-    // Write summary to console
-    console.log('\n' + '='.repeat(60));
-    console.log('COMPREHENSIVE API TEST REPORT');
-    console.log('='.repeat(60));
-    console.log(`Total Tests: ${summary.total}`);
-    console.log(`Passed: ${summary.passed} (${Math.round(summary.passed / summary.total * 100)}%)`);
-    console.log(`Failed: ${summary.failed} (${Math.round(summary.failed / summary.total * 100)}%)`);
-    console.log(`Endpoints Tested: ${summary.endpoints}`);
-    console.log('='.repeat(60));
-
-    if (report.failedTests.length > 0) {
-        console.log('\nFAILED TESTS:');
-        report.failedTests.forEach(test => {
-            console.log(`❌ ${test.method} ${test.endpoint} - Status: ${test.status} - ${test.details}`);
-            if (test.error) {
-                console.log(`   Error: ${test.error}`);
-            }
-        });
+    // Add recommendations based on failures
+    if (results.failed > 0) {
+        report.recommendations.push('Review failed tests and fix underlying issues');
+        report.recommendations.push('Check database connectivity and schema');
+        report.recommendations.push('Verify all environment variables are set correctly');
+        report.recommendations.push('Ensure all required services are running');
     }
 
-    if (report.criticalIssues.length > 0) {
-        console.log('\nCRITICAL ISSUES (5xx errors):');
-        report.criticalIssues.forEach(issue => {
-            console.log(`🚨 ${issue.method} ${issue.endpoint} - Status: ${issue.status}`);
-        });
+    if (results.failed === 0) {
+        report.recommendations.push('All systems are functioning correctly');
+        report.recommendations.push('Consider adding more comprehensive test coverage');
+        report.recommendations.push('Monitor performance and add alerting');
     }
 
-    console.log('\nDetailed report saved to: test-audit-report.json');
+    // Save report to file
+    const reportPath = 'audit-report.json';
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+
+    log(`\n📊 AUDIT COMPLETE`);
+    log(`✅ Tests Passed: ${results.passed}`);
+    log(`❌ Tests Failed: ${results.failed}`);
+    log(`📈 Success Rate: ${report.summary.successRate}`);
+    log(`📄 Full report saved to: ${reportPath}`);
+
+    if (results.failed > 0) {
+        log('\n🚨 CRITICAL ISSUES FOUND:');
+        results.errors.forEach(error => log(`   • ${error}`, 'error'));
+    }
+
     return report;
-};
+}
 
-// Main test execution
-const runComprehensiveAudit = async () => {
-    log('Starting comprehensive API audit...');
-
-    // Import fetch for Node.js
-    const fetch = (await import('node-fetch')).default;
-    global.fetch = fetch;
+// Main execution
+async function runComprehensiveAudit() {
+    log('🚀 Starting Smart Recipes Comprehensive System Audit...');
+    log(`🎯 Target API: ${BASE_URL}`);
 
     try {
+        await testHealthAndConnectivity();
         await testAuthentication();
-        await testUserEndpoints();
-        await testPreferencesEndpoints();
-        await testRecipeEndpoints();
-        await testSearchEndpoints();
-        await testRecommendationEndpoints();
-        await testDatabaseEndpoints();
-        await testSecurityEndpoints();
-        await testPrivacyEndpoints();
-        await testMigrationEndpoints();
+        await testUserManagement();
+        await testPreferences();
+        await testIngredients();
+        await testRecipes();
+        await testSearch();
+        await testRecommendations();
+        await testAnalytics();
+        await testSecurity();
+        await testPrivacy();
+        await testMigrations();
 
         const report = generateReport();
 
-        log('Comprehensive audit completed!');
-        return report;
+        // Exit with error code if tests failed
+        process.exit(results.failed > 0 ? 1 : 0);
 
     } catch (error) {
-        log(`Audit failed: ${error.message}`, 'error');
-        throw error;
+        log(`💥 Audit failed with critical error: ${error.message}`, 'error');
+        console.error(error);
+        process.exit(1);
     }
-};
+}
 
 // Run the audit
-runComprehensiveAudit().catch(console.error); 
+if (require.main === module) {
+    runComprehensiveAudit();
+}
+
+module.exports = { runComprehensiveAudit }; 

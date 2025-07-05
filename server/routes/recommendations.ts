@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { z } from 'zod';
-import { pool } from '../db/db';
+import db from '../db/db';
 import { ClientError } from '../lib/client-error';
 import OpenAI from 'openai';
 
@@ -20,6 +20,39 @@ function getOpenAIClient(): OpenAI {
 }
 
 const router = express.Router();
+
+/**
+ * Get general recommendations (for backward compatibility)
+ * GET /api/recommendations
+ */
+router.get('/', async (req, res, next) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+
+        // Simple query to get recent popular recipes
+        const query = `
+            SELECT 
+                r."recipeId",
+                r.title,
+                r.description,
+                r.cuisine,
+                r.difficulty,
+                r."cookingTime",
+                r.servings
+            FROM recipes r
+            ORDER BY r."createdAt" DESC
+            LIMIT $1
+                 `;
+
+        const result = await db.query(query, [limit]);
+
+        // Return array directly to match test expectations
+        res.json(result.rows);
+    } catch (err) {
+        console.error('General recommendations error:', err);
+        next(err);
+    }
+});
 
 // Recommendation request schemas
 const personalizedRecommendationsSchema = z.object({

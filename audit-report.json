@@ -1,0 +1,460 @@
+{
+  "summary": {
+    "totalTests": 34,
+    "passed": 16,
+    "failed": 18,
+    "successRate": "47.1%",
+    "timestamp": "2025-07-05T02:22:37.691Z"
+  },
+  "testResults": [
+    {
+      "testName": "API Health Check",
+      "passed": true,
+      "details": "Status: healthy",
+      "timestamp": "2025-07-05T02:22:37.507Z"
+    },
+    {
+      "testName": "Database Health Check",
+      "passed": true,
+      "details": "DB Status: healthy",
+      "timestamp": "2025-07-05T02:22:37.509Z"
+    },
+    {
+      "testName": "404 Error Handling",
+      "passed": true,
+      "details": "Correctly returns 404",
+      "timestamp": "2025-07-05T02:22:37.511Z"
+    },
+    {
+      "testName": "Auth Database Connection",
+      "passed": true,
+      "details": "User count: 9",
+      "timestamp": "2025-07-05T02:22:37.515Z"
+    },
+    {
+      "testName": "User Registration",
+      "passed": true,
+      "details": "New user created",
+      "timestamp": "2025-07-05T02:22:37.587Z"
+    },
+    {
+      "testName": "User Login",
+      "passed": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwLCJlbWFpbCI6ImF1ZGl0LXRlc3RAc21hcnRyZWNpcGVzLmNvbSIsIm5hbWUiOiJBdWRpdCBUZXN0IFVzZXIiLCJpYXQiOjE3NTE2ODIxNTd9.USRnRvw8fAcUXpP0UaFOfUPfXrGj9hJ50fGf3H2UoeA",
+      "details": "Token received",
+      "timestamp": "2025-07-05T02:22:37.644Z"
+    },
+    {
+      "testName": "Protected Route Access",
+      "passed": {
+        "userId": 10,
+        "email": "audit-test@smartrecipes.com",
+        "name": "Audit Test User",
+        "iat": 1751682157
+      },
+      "details": "User: Audit Test User",
+      "timestamp": "2025-07-05T02:22:37.646Z"
+    },
+    {
+      "testName": "Get Users List",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/users not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "timestamp": "2025-07-05T02:22:37.648Z"
+    },
+    {
+      "testName": "Get User Preferences",
+      "passed": true,
+      "details": "No preferences found (expected for new user)",
+      "timestamp": "2025-07-05T02:22:37.652Z"
+    },
+    {
+      "testName": "Set User Preferences",
+      "passed": true,
+      "details": "Preferences saved successfully",
+      "timestamp": "2025-07-05T02:22:37.655Z"
+    },
+    {
+      "testName": "Get Preferences After Setting",
+      "details": "Found 0 dietary restrictions",
+      "timestamp": "2025-07-05T02:22:37.658Z"
+    },
+    {
+      "testName": "Get All Ingredients",
+      "passed": false,
+      "details": "Found undefined ingredients",
+      "timestamp": "2025-07-05T02:22:37.662Z"
+    },
+    {
+      "testName": "Search Ingredients",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.665Z"
+    },
+    {
+      "testName": "Get Ingredients by Category",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.666Z"
+    },
+    {
+      "testName": "Get All Recipes",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.671Z"
+    },
+    {
+      "testName": "Generate Recipe",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.673Z"
+    },
+    {
+      "testName": "Get Saved Recipes",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.674Z"
+    },
+    {
+      "testName": "Get Favorite Recipes",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.675Z"
+    },
+    {
+      "testName": "Basic Recipe Search",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.675Z"
+    },
+    {
+      "testName": "Advanced Recipe Search",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.676Z"
+    },
+    {
+      "testName": "Ingredient-based Search",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "timestamp": "2025-07-05T02:22:37.677Z"
+    },
+    {
+      "testName": "Get Recipe Recommendations",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/recommendations not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "timestamp": "2025-07-05T02:22:37.678Z"
+    },
+    {
+      "testName": "Get Personalized Recommendations",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/recommendations?userId=10&limit=5 not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "timestamp": "2025-07-05T02:22:37.679Z"
+    },
+    {
+      "testName": "Analytics Health Check",
+      "passed": false,
+      "details": {
+        "status": "unhealthy",
+        "error": "relation \"analytics_events\" does not exist",
+        "timestamp": "2025-07-05T02:22:37.680Z"
+      },
+      "timestamp": "2025-07-05T02:22:37.680Z"
+    },
+    {
+      "testName": "Post Analytics Event",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint POST /api/analytics/events not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "timestamp": "2025-07-05T02:22:37.681Z"
+    },
+    {
+      "testName": "Get Analytics Summary",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/analytics/summary?days=7 not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "timestamp": "2025-07-05T02:22:37.681Z"
+    },
+    {
+      "testName": "Security Test Endpoint",
+      "passed": "PROTECTED",
+      "details": "Security: PROTECTED",
+      "timestamp": "2025-07-05T02:22:37.682Z"
+    },
+    {
+      "testName": "Rate Limiting Status",
+      "passed": {
+        "success": true,
+        "data": {
+          "identifier": "anonymous:::1",
+          "limits": {
+            "general": {
+              "window": "15 minutes",
+              "max": 100
+            },
+            "auth": {
+              "window": "15 minutes",
+              "max": 10
+            },
+            "ai": {
+              "window": "1 hour",
+              "max": 5
+            },
+            "search": {
+              "window": "5 minutes",
+              "max": 50
+            }
+          },
+          "redis": false
+        },
+        "timestamp": "2025-07-05T02:22:37.683Z"
+      },
+      "details": "Rate limiting active",
+      "timestamp": "2025-07-05T02:22:37.683Z"
+    },
+    {
+      "testName": "XSS Protection",
+      "passed": true,
+      "details": "Malicious input correctly blocked",
+      "timestamp": "2025-07-05T02:22:37.684Z"
+    },
+    {
+      "testName": "Privacy Policy Endpoint",
+      "passed": {
+        "lastUpdated": "2024-01-01",
+        "version": "1.0",
+        "dataCollection": {
+          "personalData": [
+            "Email address",
+            "Name",
+            "Recipe preferences",
+            "Dietary restrictions",
+            "Cooking history"
+          ],
+          "purpose": [
+            "Provide personalized recipe recommendations",
+            "Improve AI recipe generation",
+            "Account management",
+            "Security and fraud prevention"
+          ],
+          "legalBasis": "Consent and legitimate interest",
+          "retention": "2 years after account deletion or 5 years of inactivity"
+        },
+        "userRights": [
+          "Right to access your data",
+          "Right to rectification",
+          "Right to erasure (right to be forgotten)",
+          "Right to restrict processing",
+          "Right to data portability",
+          "Right to object",
+          "Right to withdraw consent"
+        ],
+        "cookies": {
+          "essential": "Required for basic functionality",
+          "analytics": "Help us understand how you use the app",
+          "marketing": "Used for personalized advertising",
+          "preferences": "Remember your settings and preferences"
+        },
+        "contact": {
+          "email": "privacy@smartrecipes.com",
+          "address": "Smart Recipes Privacy Team, [Address]"
+        }
+      },
+      "details": "Privacy policy available",
+      "timestamp": "2025-07-05T02:22:37.685Z"
+    },
+    {
+      "testName": "Cookie Consent Endpoint",
+      "passed": {
+        "essential": true,
+        "analytics": false,
+        "marketing": false,
+        "preferences": false,
+        "lastUpdated": null
+      },
+      "details": "Cookie consent system working",
+      "timestamp": "2025-07-05T02:22:37.686Z"
+    },
+    {
+      "testName": "GDPR Data Export",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Failed to export user data"
+      },
+      "timestamp": "2025-07-05T02:22:37.688Z"
+    },
+    {
+      "testName": "Migration Status Check",
+      "passed": {
+        "applied": 0,
+        "pending": 2,
+        "migrations": [
+          {
+            "version": "20250623060000_initial_schema",
+            "name": "Initial Schema Setup",
+            "status": "pending"
+          },
+          {
+            "version": "20250624052513_add_notes_and_cooking_history",
+            "name": "add_notes_and_cooking_history",
+            "status": "pending"
+          }
+        ]
+      },
+      "details": "Migrations: 0 applied",
+      "timestamp": "2025-07-05T02:22:37.690Z"
+    },
+    {
+      "testName": "Migration Validation",
+      "passed": true,
+      "details": "All migrations valid",
+      "timestamp": "2025-07-05T02:22:37.691Z"
+    }
+  ],
+  "errors": [
+    "Get Users List: [object Object]",
+    "Get Preferences After Setting: Found 0 dietary restrictions",
+    "Get All Ingredients: Found undefined ingredients",
+    "Search Ingredients: [object Object]",
+    "Get Ingredients by Category: [object Object]",
+    "Get All Recipes: [object Object]",
+    "Generate Recipe: [object Object]",
+    "Get Saved Recipes: [object Object]",
+    "Get Favorite Recipes: [object Object]",
+    "Basic Recipe Search: [object Object]",
+    "Advanced Recipe Search: [object Object]",
+    "Ingredient-based Search: [object Object]",
+    "Get Recipe Recommendations: [object Object]",
+    "Get Personalized Recommendations: [object Object]",
+    "Analytics Health Check: [object Object]",
+    "Post Analytics Event: [object Object]",
+    "Get Analytics Summary: [object Object]",
+    "GDPR Data Export: [object Object]"
+  ],
+  "recommendations": [
+    "Review failed tests and fix underlying issues",
+    "Check database connectivity and schema",
+    "Verify all environment variables are set correctly",
+    "Ensure all required services are running"
+  ]
+}

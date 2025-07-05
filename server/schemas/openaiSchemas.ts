@@ -2,13 +2,17 @@ import { z } from 'zod';
 
 // Schema for recipe generation request
 export const recipeGenerationRequestSchema = z.object({
-    userId: z.number().int().positive(),
-    includeIngredients: z.array(z.string()).optional(),
+    userId: z.number().int().positive().optional(), // Make optional for backward compatibility
+    mealType: z.string().optional(),
+    cuisineType: z.string().optional(), // Test uses cuisineType, not cuisine
+    ingredients: z.array(z.string()).optional(), // Test uses ingredients, not includeIngredients
+    includeIngredients: z.array(z.string()).optional(), // Keep for backward compatibility
     excludeIngredients: z.array(z.string()).optional(),
     dietaryRestrictions: z.array(z.string()).optional(),
-    cuisine: z.string().optional(),
-    mealType: z.string().optional(),
+    cuisine: z.string().optional(), // Keep for backward compatibility
     cookingTime: z.number().int().positive().optional(),
+    servingSize: z.number().int().positive().optional(), // Test includes servingSize
+    spiceLevel: z.enum(['mild', 'medium', 'hot']).optional(), // Test includes spiceLevel
     difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
     message: z.string().min(2).optional()
 });

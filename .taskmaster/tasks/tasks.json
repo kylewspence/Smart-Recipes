@@ -2,449 +2,243 @@
   "master": {
     "tasks": [
       {
-        "id": 21,
-        "title": "Fix API Route Mounting Issues",
-        "description": "Resolve 404 errors by properly mounting missing API routes in the main server.",
-        "details": "1. Identify all unmounted routes in the main server file (likely app.js or server.js).\n2. Import the route modules for preferences, search, and recommendations.\n3. Use Express.js middleware to mount the routes:\n   app.use('/api/preferences', preferencesRouter);\n   app.use('/api/search', searchRouter);\n   app.use('/api/recommendations', recommendationsRouter);\n4. Verify route mounting by checking the Express app object.\n5. Implement a catch-all route for unhandled routes to return a proper 404 response.\n6. Use a tool like Postman or curl to test all routes and ensure they return 200 status codes.",
-        "testStrategy": "1. Write unit tests for each route using a testing framework like Jest or Mocha.\n2. Implement integration tests that call each API endpoint and verify the response.\n3. Use a CI/CD pipeline (e.g., GitHub Actions) to run tests automatically on each commit.",
+        "id": 36,
+        "title": "Create Missing Analytics Database Tables",
+        "description": "Create the missing analytics tables identified in the audit: analytics_events, analytics_pageviews, and analytics_performance.",
+        "details": "Create SQL migration scripts to add the following tables:\n1. analytics_events: Track user interactions\n   - id (PK, auto-increment)\n   - user_id (FK to users table)\n   - event_type (VARCHAR, indexed)\n   - event_data (JSON)\n   - timestamp (TIMESTAMP)\n\n2. analytics_pageviews: Track page views\n   - id (PK, auto-increment)\n   - user_id (FK to users table, nullable)\n   - page_url (VARCHAR, indexed)\n   - referrer (VARCHAR, nullable)\n   - user_agent (VARCHAR)\n   - timestamp (TIMESTAMP)\n\n3. analytics_performance: Track API performance\n   - id (PK, auto-increment)\n   - endpoint (VARCHAR, indexed)\n   - response_time_ms (INTEGER)\n   - status_code (INTEGER)\n   - timestamp (TIMESTAMP)\n\nEnsure proper indexes are created for frequently queried columns. Add foreign key constraints where appropriate. Test the migration script in a development environment before applying to production.",
+        "testStrategy": "1. Verify tables are created with correct schema\n2. Test inserting sample data into each table\n3. Verify foreign key constraints work correctly\n4. Test querying data with various filters\n5. Verify indexes are properly created and used in queries\n6. Run database performance tests to ensure queries are optimized",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Identify and define API routes",
-            "description": "Determine the necessary API endpoints and their corresponding HTTP methods",
-            "dependencies": [],
-            "details": "List all required API routes, specifying the HTTP method (GET, POST, PUT, DELETE) and the path for each route. Consider the existing project structure and requirements when defining these routes.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create route handler functions",
-            "description": "Implement the logic for each API route",
-            "dependencies": [
-              1
-            ],
-            "details": "For each identified route, create a corresponding handler function that processes the request and sends the appropriate response. Include input validation and error handling within these functions.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Configure and mount routes in Express.js",
-            "description": "Set up the Express router and mount the defined routes",
-            "dependencies": [
-              2
-            ],
-            "details": "Create an Express router, import the route handler functions, and associate them with the corresponding routes. Mount the router in the main Express application file.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Implement error handling and testing",
-            "description": "Add global error handling middleware and create tests for the API routes",
-            "dependencies": [
-              3
-            ],
-            "details": "Implement a global error handling middleware to catch and process any errors thrown in the route handlers. Write unit tests for each API route to ensure proper functionality and error handling.",
-            "status": "pending",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 22,
-        "title": "Debug and Fix Database Query Errors",
-        "description": "Resolve 500 server errors in recipe and ingredient search functionality by fixing database queries.",
-        "details": "1. Review and optimize SQL queries for recipe and ingredient search.\n2. Implement proper error handling using try-catch blocks.\n3. Use parameterized queries to prevent SQL injection.\n4. Implement query logging for debugging (consider using a library like winston).\n5. Optimize database indexes for search queries.\n6. Use an ORM like Sequelize or TypeORM for better query management.\n7. Implement query caching using Redis for frequently accessed data.\n8. Use database connection pooling to manage connections efficiently.",
-        "testStrategy": "1. Write unit tests for database operations using a testing database.\n2. Implement integration tests that simulate various search scenarios.\n3. Use database profiling tools to identify slow queries.\n4. Perform load testing to ensure query performance under high concurrency.",
-        "priority": "high",
-        "dependencies": [
-          21
-        ],
-        "status": "pending",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Analyze existing SQL queries",
-            "description": "Review and document current SQL queries used in the project",
-            "dependencies": [],
-            "details": "Identify frequently used queries, complex joins, and potential bottlenecks",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement query optimization techniques",
-            "description": "Apply various optimization techniques to improve query performance",
-            "dependencies": [
-              1
-            ],
-            "details": "Use indexing, query rewriting, and materialized views where appropriate",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Develop error handling framework",
-            "description": "Create a robust error handling system for database operations",
-            "dependencies": [],
-            "details": "Implement try-catch blocks, custom error classes, and logging mechanisms",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Set up database profiling",
-            "description": "Configure and implement database profiling tools",
-            "dependencies": [
-              1
-            ],
-            "details": "Use built-in database profiling features and third-party tools to monitor query performance",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement connection pooling",
-            "description": "Set up and configure database connection pooling",
-            "dependencies": [],
-            "details": "Choose appropriate connection pooling library and optimize pool size and timeout settings",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Test and validate optimizations",
-            "description": "Conduct thorough testing of all implemented optimizations and error handling",
-            "dependencies": [
-              2,
-              3,
-              4,
-              5
-            ],
-            "details": "Perform load testing, verify error handling scenarios, and analyze profiling results",
-            "status": "pending",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 23,
-        "title": "Implement User Preferences CRUD Operations",
-        "description": "Complete the user preferences system by implementing all CRUD operations and adding validation.",
-        "details": "1. Design a preferences schema using Mongoose or your ORM of choice.\n2. Implement RESTful API endpoints for CRUD operations:\n   - GET /api/preferences/:userId\n   - POST /api/preferences\n   - PUT /api/preferences/:userId\n   - DELETE /api/preferences/:userId\n3. Add input validation using a library like Joi or express-validator.\n4. Implement default preferences for new users.\n5. Use transactions for operations that modify multiple documents.\n6. Implement proper error handling and return appropriate HTTP status codes.\n7. Add rate limiting to prevent abuse (consider using express-rate-limit).",
-        "testStrategy": "1. Write unit tests for each CRUD operation.\n2. Implement integration tests that cover the entire preference lifecycle.\n3. Test edge cases like concurrent updates and invalid inputs.\n4. Use a tool like Postman to create a test suite for manual API testing.",
-        "priority": "high",
-        "dependencies": [
-          21,
-          22
-        ],
-        "status": "pending",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Design preferences schema",
-            "description": "Create a detailed schema for user preferences, including data types and constraints",
-            "dependencies": [],
-            "details": "Define fields for user preferences, consider data types (e.g., string, boolean, integer), and set appropriate constraints (e.g., max length, allowed values)",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement RESTful endpoints",
-            "description": "Create API endpoints for CRUD operations on user preferences",
-            "dependencies": [
-              1
-            ],
-            "details": "Develop GET, POST, PUT, and DELETE endpoints for user preferences, ensuring proper routing and request handling",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Add input validation",
-            "description": "Implement server-side validation for user preference data",
-            "dependencies": [
-              1,
-              2
-            ],
-            "details": "Create validation middleware to check incoming requests against the defined schema, ensuring data integrity and security",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Handle edge cases",
-            "description": "Identify and address potential edge cases in preference management",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "Consider scenarios such as conflicting updates, missing data, and unexpected input formats. Implement appropriate error handling and responses",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement concurrency control",
-            "description": "Add mechanisms to handle concurrent updates to user preferences",
-            "dependencies": [
-              2,
-              4
-            ],
-            "details": "Implement optimistic locking or other concurrency control methods to prevent data conflicts when multiple users or processes attempt to update preferences simultaneously",
-            "status": "pending",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 24,
-        "title": "Complete Recipe Generation Flow",
-        "description": "Fix the recipe generation process to properly utilize user preferences and ensure end-to-end functionality.",
-        "details": "1. Integrate with a reliable AI service (e.g., OpenAI API) for recipe generation.\n2. Implement a function to fetch and format user preferences for AI input.\n3. Design a prompt template that incorporates user preferences and dietary restrictions.\n4. Handle API rate limiting and implement a queuing system for high traffic (consider using bull or kue).\n5. Implement error handling for AI service failures.\n6. Store generated recipes in the database and link them to user accounts.\n7. Implement a caching mechanism to store frequently generated recipes.\n8. Use async/await for better readability and error handling in the generation process.",
-        "testStrategy": "1. Mock AI service responses for unit testing.\n2. Implement integration tests that cover the entire recipe generation flow.\n3. Test edge cases like AI service outages and invalid preferences.\n4. Perform load testing to ensure the system can handle multiple concurrent recipe generations.",
-        "priority": "high",
-        "dependencies": [
-          23
-        ],
-        "status": "pending",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Research and select AI service",
-            "description": "Evaluate available AI services for recipe generation and choose the most suitable one",
-            "dependencies": [],
-            "details": "Compare features, pricing, and integration complexity of different AI services. Consider factors like API reliability, scalability, and supported recipe formats.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement AI service integration",
-            "description": "Develop the necessary code to integrate the selected AI service into the application",
-            "dependencies": [
-              1
-            ],
-            "details": "Create API wrapper, handle authentication, implement error handling, and ensure proper data formatting for recipe generation requests and responses.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Design user preference system",
-            "description": "Create a system to capture and store user preferences for recipe generation",
-            "dependencies": [],
-            "details": "Define preference categories (e.g., dietary restrictions, cuisine types, cooking time), design database schema, and create UI for users to input and update preferences.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Implement queuing system",
-            "description": "Develop a queuing system to manage recipe generation requests",
-            "dependencies": [
-              2
-            ],
-            "details": "Choose a queuing technology (e.g., Redis, RabbitMQ), implement queue management logic, and ensure proper handling of concurrent requests and rate limiting.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Create recipe generation workflow",
-            "description": "Develop the process for generating recipes based on user preferences and queuing system",
-            "dependencies": [
-              2,
-              3,
-              4
-            ],
-            "details": "Implement logic to combine user preferences with AI service requests, manage queue processing, and handle successful and failed generation attempts.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Implement recipe storage and retrieval",
-            "description": "Design and implement a system to store and retrieve generated recipes",
-            "dependencies": [
-              5
-            ],
-            "details": "Create database schema for recipes, implement CRUD operations, and develop efficient querying mechanisms for recipe retrieval based on various criteria.",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Optimize performance and implement monitoring",
-            "description": "Enhance system performance and add monitoring capabilities",
-            "dependencies": [
-              5,
-              6
-            ],
-            "details": "Implement caching strategies, optimize database queries, add logging and error tracking, and set up performance monitoring tools to ensure system reliability and efficiency.",
-            "status": "pending",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 25,
-        "title": "Implement Unified Search Functionality",
-        "description": "Create a unified search feature that combines recipe, ingredient, and user searches.",
-        "details": "1. Design a unified search API endpoint (e.g., GET /api/search/unified?q=query).\n2. Implement search logic for recipes, ingredients, and users.\n3. Use Elasticsearch or MongoDB's text search for efficient full-text search.\n4. Implement search result ranking based on relevance.\n5. Add filters for dietary restrictions, cuisine types, and other relevant factors.\n6. Implement pagination for search results.\n7. Use debouncing on the frontend to prevent excessive API calls.\n8. Implement proper error handling and logging for search operations.",
-        "testStrategy": "1. Write unit tests for individual search functions.\n2. Implement integration tests for the unified search endpoint.\n3. Test search performance with large datasets.\n4. Conduct user testing to ensure search results are relevant and useful.",
-        "priority": "high",
-        "dependencies": [
-          22
-        ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
-        "id": 26,
-        "title": "Develop Recommendations Engine",
-        "description": "Implement a recommendation system based on user preferences and history.",
-        "details": "1. Design a recommendation algorithm (e.g., collaborative filtering or content-based).\n2. Implement a background job to periodically update recommendations (use a library like node-cron).\n3. Store recommendations in the database and link them to user accounts.\n4. Create an API endpoint to fetch recommendations (GET /api/recommendations/:userId).\n5. Implement caching for recommendations to improve performance (use Redis).\n6. Add personalization factors like time of day and season.\n7. Use machine learning libraries like TensorFlow.js for advanced recommendation models.\n8. Implement A/B testing to compare different recommendation algorithms.",
-        "testStrategy": "1. Write unit tests for the recommendation algorithm.\n2. Implement integration tests for the recommendation API.\n3. Conduct user studies to evaluate the quality of recommendations.\n4. Perform load testing to ensure the system can generate recommendations for many users.",
-        "priority": "medium",
-        "dependencies": [
-          23,
-          24
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 27,
-        "title": "Implement Advanced Search Filters",
-        "description": "Add advanced filtering options to the search functionality, including dietary restrictions and cuisine types.",
-        "details": "1. Design and implement filter schema for various attributes (dietary, cuisine, difficulty, etc.).\n2. Update the search API to accept filter parameters.\n3. Modify the search query to incorporate filters.\n4. Implement server-side validation for filter parameters.\n5. Create index on filter fields in the database for optimized queries.\n6. Implement filter combination logic (AND/OR operations).\n7. Add support for range filters (e.g., cooking time, number of ingredients).\n8. Implement filter suggestions based on available data.",
-        "testStrategy": "1. Write unit tests for each filter type.\n2. Implement integration tests with various filter combinations.\n3. Perform performance testing with large datasets and complex filters.\n4. Conduct usability testing to ensure filters are intuitive for users.",
-        "priority": "medium",
-        "dependencies": [
-          25
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 28,
-        "title": "Develop Recipe Management UI",
-        "description": "Implement the user interface for saving, editing, and managing recipes.",
-        "details": "1. Use React with hooks for state management.\n2. Implement a responsive grid layout for recipe cards (consider using CSS Grid or Flexbox).\n3. Create modals for recipe details and editing (use react-modal or similar).\n4. Implement client-side form validation for recipe editing.\n5. Use optimistic UI updates for better user experience.\n6. Implement drag-and-drop functionality for reordering saved recipes (react-beautiful-dnd).\n7. Add infinite scroll for recipe lists to improve performance.\n8. Implement skeleton screens for loading states.",
-        "testStrategy": "1. Write unit tests for React components using Jest and React Testing Library.\n2. Implement integration tests for user flows like saving and editing recipes.\n3. Conduct cross-browser testing (use a service like BrowserStack).\n4. Perform usability testing with real users to gather feedback.",
-        "priority": "medium",
-        "dependencies": [
-          24
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 29,
-        "title": "Create User Preferences UI",
-        "description": "Develop the user interface for managing preferences and completing the onboarding flow.",
-        "details": "1. Design a multi-step onboarding process using a wizard-like interface.\n2. Implement form components for various preference types (dietary, cuisine, etc.).\n3. Use React Context or Redux for global state management.\n4. Implement client-side validation for preference inputs.\n5. Create animations for smooth transitions between onboarding steps (use Framer Motion).\n6. Implement progress saving to allow users to complete onboarding later.\n7. Add a preference import/export feature using JSON.\n8. Ensure the UI is fully responsive and works well on mobile devices.",
-        "testStrategy": "1. Write unit tests for individual form components.\n2. Implement integration tests for the complete onboarding flow.\n3. Conduct usability testing to ensure the onboarding process is intuitive.\n4. Perform cross-device testing to ensure responsiveness.",
-        "priority": "medium",
-        "dependencies": [
-          23
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 30,
-        "title": "Implement Search and Browse UI",
-        "description": "Develop the user interface for searching recipes and browsing search results.",
-        "details": "1. Create a search bar component with autocomplete functionality (use react-autosuggest).\n2. Implement advanced search filters UI with checkboxes and dropdowns.\n3. Create a responsive grid layout for search results.\n4. Implement infinite scroll for search results (use react-infinite-scroll-component).\n5. Add sorting options for search results (by relevance, rating, etc.).\n6. Implement skeleton screens for loading states.\n7. Use debouncing for search input to reduce API calls.\n8. Add a 'Save Search' feature for frequently used searches.",
-        "testStrategy": "1. Write unit tests for search components.\n2. Implement integration tests for the search flow.\n3. Conduct performance testing for rendering large result sets.\n4. Perform usability testing to ensure the search UI is intuitive and efficient.",
-        "priority": "medium",
-        "dependencies": [
-          25,
-          27
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 31,
-        "title": "Implement Social Features",
-        "description": "Add social functionality including recipe sharing, user profiles, and following other users.",
-        "details": "1. Design and implement a user profile schema.\n2. Create API endpoints for user profiles and following/unfollowing.\n3. Implement a activity feed system using a pub/sub model (consider using Redis).\n4. Add social sharing buttons for recipes (use react-share).\n5. Implement a commenting system for recipes (consider using a service like Disqus).\n6. Create a notification system for social interactions.\n7. Implement privacy settings for user profiles.\n8. Add social login options (OAuth with Google, Facebook, etc.).",
-        "testStrategy": "1. Write unit tests for social feature components.\n2. Implement integration tests for user interactions like following and sharing.\n3. Conduct security testing for privacy settings.\n4. Perform load testing to ensure the activity feed can handle high volumes.",
-        "priority": "low",
-        "dependencies": [
-          28
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 32,
-        "title": "Develop Meal Planning Feature",
-        "description": "Implement a meal planning system with calendar integration and shopping list generation.",
-        "details": "1. Design a meal plan schema to store planned meals.\n2. Implement a calendar view for meal planning (use react-big-calendar).\n3. Create drag-and-drop functionality for adding recipes to the meal plan.\n4. Implement a shopping list generation algorithm based on meal plans.\n5. Add the ability to export meal plans and shopping lists.\n6. Implement recurring meal plans (weekly, monthly).\n7. Add integration with popular calendar services (Google Calendar, iCal).\n8. Implement smart suggestions for meal planning based on user preferences and past plans.",
-        "testStrategy": "1. Write unit tests for meal planning components and algorithms.\n2. Implement integration tests for the complete meal planning flow.\n3. Conduct usability testing for the meal planning interface.\n4. Test calendar integrations with various services and devices.",
-        "priority": "low",
-        "dependencies": [
-          24,
-          28
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 33,
-        "title": "Implement Analytics and Insights",
-        "description": "Develop a system for tracking user behavior, recipe performance, and generating personalized insights.",
-        "details": "1. Implement event tracking using a service like Segment or a custom solution.\n2. Create a data pipeline for processing and storing analytics data (consider using Apache Kafka).\n3. Develop algorithms for generating personalized insights.\n4. Create a dashboard UI for displaying analytics and insights.\n5. Implement A/B testing functionality for feature optimization.\n6. Add predictive analytics for user behavior and recipe popularity.\n7. Implement data visualization components (use D3.js or Chart.js).\n8. Ensure GDPR compliance for data collection and storage.",
-        "testStrategy": "1. Write unit tests for analytics processing functions.\n2. Implement integration tests for the complete analytics pipeline.\n3. Conduct privacy and security audits for collected data.\n4. Perform load testing to ensure the system can handle high volumes of analytics data.",
-        "priority": "low",
-        "dependencies": [
-          24,
-          26,
-          31
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 34,
-        "title": "Optimize Application Performance",
-        "description": "Improve overall application performance through caching, code splitting, and optimizations.",
-        "details": "1. Implement server-side caching using Redis for frequently accessed data.\n2. Use React.lazy and Suspense for code splitting and lazy loading.\n3. Optimize images using a CDN and responsive image techniques.\n4. Implement service workers for offline functionality and faster load times.\n5. Use WebSockets for real-time updates to reduce API calls.\n6. Optimize database queries and add necessary indexes.\n7. Implement server-side rendering for improved initial load time and SEO.\n8. Use performance monitoring tools like New Relic or Datadog.",
-        "testStrategy": "1. Conduct performance audits using Lighthouse and WebPageTest.\n2. Implement automated performance testing in the CI/CD pipeline.\n3. Conduct A/B testing to measure the impact of performance optimizations.\n4. Perform load testing to ensure optimizations hold under high traffic.",
-        "priority": "medium",
-        "dependencies": [
-          28,
-          29,
-          30
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": 35,
-        "title": "Implement Comprehensive Error Handling and Logging",
-        "description": "Develop a robust system for handling errors, logging, and monitoring across the application.",
-        "details": "1. Implement a centralized error handling middleware for the backend.\n2. Use a logging library like Winston for structured logging.\n3. Integrate with an error tracking service like Sentry for real-time error notifications.\n4. Implement custom error classes for different types of application errors.\n5. Add error boundaries in React for graceful frontend error handling.\n6. Implement a system for error prioritization and alerting.\n7. Create a user-friendly error display system for the frontend.\n8. Implement log rotation and archiving for long-term storage.",
-        "testStrategy": "1. Write unit tests for error handling functions.\n2. Implement integration tests that simulate various error scenarios.\n3. Conduct chaos engineering tests to ensure the system handles unexpected failures gracefully.\n4. Perform security testing to ensure sensitive information is not exposed in error logs.",
-        "priority": "high",
+        "id": 37,
+        "title": "Fix Ingredient Database Schema and Queries",
+        "description": "Resolve issues with ingredient categorization queries using the existing database structure.",
+        "status": "in-progress",
         "dependencies": [],
+        "priority": "high",
+        "details": "1. Review current ingredient table schema to understand its structure\n2. Fix ingredient categorization queries using the existing schema:\n   ```sql\n   -- Example fix for ingredient categorization query\n   SELECT i.*, c.name as category_name \n   FROM ingredients i\n   LEFT JOIN ingredient_categories c ON i.category_id = c.id\n   WHERE i.active = true\n   ORDER BY c.name, i.name;\n   ```\n3. Ensure proper error handling in ingredient database queries\n4. Verify all foreign key relationships between ingredients and related tables\n5. DO NOT add new columns, tables or indexes - work with existing schema\n6. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Unit test all ingredient database queries with existing schema\n3. Verify ingredient categorization returns correct results\n4. Test edge cases (ingredients without categories, etc.)\n5. Verify ingredient data integrity across the system\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 38,
+        "title": "Fix Recipe Database Queries",
+        "description": "Resolve recipe database query issues using the existing database structure to ensure data integrity.",
         "status": "pending",
+        "dependencies": [
+          37
+        ],
+        "priority": "high",
+        "details": "1. Review current recipe table schema to understand its structure\n2. Fix recipe query issues using the existing schema:\n   ```sql\n   -- Example fix for recipe query\n   SELECT r.*, array_agg(ri.ingredient_id) as ingredients\n   FROM recipes r\n   LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id\n   GROUP BY r.id;\n   ```\n3. Ensure proper error handling in recipe database queries\n4. Verify all foreign key relationships between recipes and related tables\n5. Fix any inconsistent data in the recipes database\n6. DO NOT add new columns, tables or indexes - work with existing schema\n7. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Unit test all recipe database queries with existing schema\n3. Verify recipe relationships return correct results\n4. Test recipe CRUD operations with existing schema\n5. Verify recipe data integrity across the system\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 39,
+        "title": "Debug and Fix API Route Mounting Issues",
+        "description": "Verify route mounting in server.ts and ensure all existing API routes are properly registered and accessible.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Review server.ts file to identify route mounting issues\n2. Check for missing or incorrect route registrations\n3. Fix route mounting for all existing endpoints:\n   ```typescript\n   // Example fix for route mounting in server.ts\n   import recipeRoutes from './routes/recipes';\n   import ingredientRoutes from './routes/ingredients';\n   import searchRoutes from './routes/search';\n   import recommendationRoutes from './routes/recommendations';\n   import userPreferencesRoutes from './routes/userPreferences';\n   \n   // Mount all routes with proper prefixes\n   app.use('/api/recipes', recipeRoutes);\n   app.use('/api/ingredients', ingredientRoutes);\n   app.use('/api/search', searchRoutes);\n   app.use('/api/recommendations', recommendationRoutes);\n   app.use('/api/user/preferences', userPreferencesRoutes);\n   ```\n4. Ensure proper error handling middleware is registered\n5. Verify route parameter validation\n6. DO NOT add new routes or endpoints - only fix existing ones\n7. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test each existing API endpoint for proper routing\n3. Verify 404 handling for non-existent routes\n4. Test route parameter validation\n5. Verify proper error responses\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 40,
+        "title": "Fix Database Query Errors Causing 500 Responses",
+        "description": "Debug and fix database query errors causing 500 Internal Server Error responses across major endpoints.",
+        "status": "pending",
+        "dependencies": [
+          37,
+          38,
+          39
+        ],
+        "priority": "high",
+        "details": "1. Implement proper error handling for database queries:\n   ```typescript\n   // Example improved error handling for database queries\n   async function getRecipeById(id: number): Promise<Recipe | null> {\n     try {\n       const result = await db.query(\n         'SELECT * FROM recipes WHERE id = $1',\n         [id]\n       );\n       return result.rows[0] || null;\n     } catch (error) {\n       console.error('Database error in getRecipeById:', error);\n       throw new DatabaseError('Failed to retrieve recipe', error);\n     }\n   }\n   ```\n2. Review and fix all database queries in recipe endpoints\n3. Fix ingredient endpoint database queries\n4. Resolve search endpoint query issues\n5. Implement proper transaction handling where needed\n6. Add logging for database errors\n7. Ensure proper error responses are sent to clients\n8. DO NOT modify database schema - work with existing structure\n9. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Unit test all database query functions with existing schema\n3. Test error handling for database connection failures\n4. Verify proper error responses for invalid queries\n5. Test transaction rollback scenarios\n6. Verify no 500 errors are returned for expected error conditions\n7. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 41,
+        "title": "Restore Search Functionality",
+        "description": "Fix basic and advanced search functionality using existing database schema and API endpoints.",
+        "status": "pending",
+        "dependencies": [
+          36,
+          38,
+          40
+        ],
+        "priority": "high",
+        "details": "1. Fix basic recipe search query:\n   ```typescript\n   // Example fix for basic recipe search\n   async function searchRecipes(query: string, filters: SearchFilters = {}): Promise<Recipe[]> {\n     try {\n       let sqlQuery = 'SELECT * FROM recipes WHERE 1=1';\n       const params: any[] = [];\n       \n       if (query) {\n         sqlQuery += ' AND (name ILIKE $1 OR description ILIKE $1)';\n         params.push(`%${query}%`);\n       }\n       \n       // Add filter conditions using existing schema\n       if (filters.categories?.length) {\n         sqlQuery += ` AND category_id IN (${filters.categories.map((_, i) => `$${params.length + i + 1}`).join(', ')})`;\n         params.push(...filters.categories);\n       }\n       \n       const result = await db.query(sqlQuery, params);\n       return result.rows;\n     } catch (error) {\n       console.error('Search error:', error);\n       throw new DatabaseError('Failed to search recipes', error);\n     }\n   }\n   ```\n2. Fix ingredient-based search functionality using existing schema\n3. Ensure search results are properly returned\n4. Fix error handling for search queries\n5. DO NOT add new search features - only fix existing functionality\n6. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test basic search functionality with various queries\n3. Verify search filters work correctly with existing schema\n4. Test ingredient-based search with existing schema\n5. Test edge cases (empty search, special characters, etc.)\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 42,
+        "title": "Fix User Preferences System",
+        "description": "Resolve conflicts between POST/PUT operations in the user preferences system using the existing database structure.",
+        "status": "pending",
+        "dependencies": [
+          39,
+          40
+        ],
+        "priority": "high",
+        "details": "1. Review current user preferences API implementation\n2. Fix POST/PUT conflict in preferences creation:\n   ```typescript\n   // Example fix for user preferences routes\n   router.post('/', authenticate, async (req, res, next) => {\n     try {\n       const userId = req.user.id;\n       const preferences = req.body;\n       \n       // Check if preferences already exist\n       const existing = await getUserPreferences(userId);\n       \n       if (existing) {\n         return res.status(409).json({\n           error: 'Preferences already exist, use PUT to update'\n         });\n       }\n       \n       const result = await createUserPreferences(userId, preferences);\n       res.status(201).json(result);\n     } catch (error) {\n       next(error);\n     }\n   });\n   \n   router.put('/', authenticate, async (req, res, next) => {\n     try {\n       const userId = req.user.id;\n       const preferences = req.body;\n       \n       // Check if preferences exist\n       const existing = await getUserPreferences(userId);\n       \n       if (!existing) {\n         return res.status(404).json({\n           error: 'Preferences not found, use POST to create'\n         });\n       }\n       \n       const result = await updateUserPreferences(userId, preferences);\n       res.json(result);\n     } catch (error) {\n       next(error);\n     }\n   });\n   ```\n3. Ensure preferences are properly validated using existing schema\n4. Implement proper error handling for preference operations\n5. DO NOT add new preference fields or features - only fix existing functionality\n6. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test creating new preferences with existing schema\n3. Test updating existing preferences with existing schema\n4. Verify error handling for invalid preferences\n5. Test retrieving preferences\n6. Verify preferences are properly persisted\n7. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 43,
+        "title": "Fix OpenAI Integration for Recipe Generation",
+        "description": "Debug and fix OpenAI integration failures in the existing recipe generation system.",
+        "status": "pending",
+        "dependencies": [
+          38,
+          40,
+          42
+        ],
+        "priority": "high",
+        "details": "1. Review current OpenAI integration code\n2. Fix API key configuration and environment variables\n3. Update OpenAI API client to compatible version\n4. Implement proper error handling for API calls:\n   ```typescript\n   // Example fix for OpenAI integration\n   async function generateRecipe(ingredients: string[], preferences: UserPreferences): Promise<GeneratedRecipe> {\n     try {\n       const openai = new OpenAI({\n         apiKey: process.env.OPENAI_API_KEY\n       });\n       \n       const prompt = buildRecipePrompt(ingredients, preferences);\n       \n       const response = await openai.chat.completions.create({\n         model: 'gpt-4',\n         messages: [\n           { role: 'system', content: 'You are a professional chef creating detailed recipes.' },\n           { role: 'user', content: prompt }\n         ],\n         temperature: 0.7,\n         max_tokens: 1000\n       });\n       \n       const recipeText = response.choices[0]?.message?.content;\n       if (!recipeText) {\n         throw new Error('Failed to generate recipe: Empty response');\n       }\n       \n       return parseGeneratedRecipe(recipeText);\n     } catch (error) {\n       console.error('OpenAI API error:', error);\n       throw new ExternalAPIError('Failed to generate recipe', error);\n     }\n   }\n   ```\n5. Fix recipe parsing from OpenAI response\n6. Ensure generated recipes can be saved to database using existing schema\n7. Add retry logic for API failures\n8. DO NOT add new features to recipe generation - only fix existing functionality\n9. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test recipe generation with various ingredients\n3. Verify error handling for API failures\n4. Test recipe parsing from API responses\n5. Verify generated recipes can be saved to database using existing schema\n6. Test recipe generation with different user preferences\n7. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 44,
+        "title": "Restore Recommendations Engine",
+        "description": "Fix the existing recommendations engine routes using the current database schema.",
+        "status": "pending",
+        "dependencies": [
+          38,
+          39,
+          40,
+          42
+        ],
+        "priority": "medium",
+        "details": "1. Review current recommendations engine implementation\n2. Fix route mounting for recommendations endpoints\n3. Fix recommendation algorithm using existing schema:\n   ```typescript\n   // Example fix for recommendations engine\n   async function getRecommendedRecipes(userId: number, limit: number = 10): Promise<Recipe[]> {\n     try {\n       // Get user preferences\n       const preferences = await getUserPreferences(userId);\n       \n       // Get user's favorite recipes\n       const favorites = await getUserFavorites(userId);\n       \n       // Build recommendation query based on preferences and favorites\n       let query = 'SELECT r.* FROM recipes r WHERE 1=1';\n       const params: any[] = [];\n       \n       // Filter by dietary preferences using existing schema\n       if (preferences?.dietaryRestrictions?.length) {\n         query += ' AND r.id NOT IN (SELECT recipe_id FROM recipe_ingredients ri JOIN ingredients i ON ri.ingredient_id = i.id WHERE i.category_id IN (SELECT id FROM ingredient_categories WHERE name = ANY($1)))';\n         params.push(preferences.dietaryRestrictions);\n       }\n       \n       // Exclude already favorited recipes\n       if (favorites.length > 0) {\n         query += ` AND r.id NOT IN (${favorites.map(f => f.id).join(', ')})`;\n       }\n       \n       // Order by relevance to user preferences\n       query += ' ORDER BY r.rating DESC LIMIT $2';\n       params.push(limit);\n       \n       const result = await db.query(query, params);\n       return result.rows;\n     } catch (error) {\n       console.error('Recommendations error:', error);\n       throw new DatabaseError('Failed to get recommendations', error);\n     }\n   }\n   ```\n4. Ensure recommendations are returned correctly\n5. Fix error handling for recommendation queries\n6. DO NOT add new recommendation features - only fix existing functionality\n7. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test recommendation generation for users with different preferences\n3. Verify recommendations exclude already favorited recipes\n4. Test recommendations with various dietary restrictions\n5. Verify error handling for recommendation queries\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 45,
+        "title": "Fix Analytics Event Logging",
+        "description": "Fix existing analytics event logging to ensure user interactions are properly tracked using the current database structure.",
+        "status": "pending",
+        "dependencies": [
+          36,
+          39,
+          40
+        ],
+        "priority": "medium",
+        "details": "1. Fix analytics event logging service:\n   ```typescript\n   // Example fix for analytics logging\n   class AnalyticsService {\n     async logEvent(userId: number | null, eventType: string, eventData: any): Promise<void> {\n       try {\n         await db.query(\n           'INSERT INTO analytics_events (user_id, event_type, event_data, timestamp) VALUES ($1, $2, $3, NOW())',\n           [userId, eventType, JSON.stringify(eventData)]\n         );\n       } catch (error) {\n         console.error('Failed to log analytics event:', error);\n         // Don't throw - analytics should not break main functionality\n       }\n     }\n     \n     async logPageView(userId: number | null, pageUrl: string, referrer: string | null, userAgent: string): Promise<void> {\n       try {\n         await db.query(\n           'INSERT INTO analytics_pageviews (user_id, page_url, referrer, user_agent, timestamp) VALUES ($1, $2, $3, $4, NOW())',\n           [userId, pageUrl, referrer, userAgent]\n         );\n       } catch (error) {\n         console.error('Failed to log page view:', error);\n         // Don't throw - analytics should not break main functionality\n       }\n     }\n   }\n   ```\n2. Fix middleware for tracking API performance\n3. Fix event logging for key user interactions (search, recipe view, favorites, etc.)\n4. Ensure analytics logging is non-blocking\n5. DO NOT add new analytics features - only fix existing functionality\n6. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test event logging for various user interactions\n3. Verify page view tracking works correctly\n4. Verify analytics data is correctly stored in database using existing schema\n5. Test performance impact of analytics logging\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 46,
+        "title": "Fix GDPR Data Export Functionality",
+        "description": "Restore existing GDPR data export functionality using the current database schema.",
+        "status": "pending",
+        "dependencies": [
+          36,
+          40,
+          42,
+          45
+        ],
+        "priority": "medium",
+        "details": "1. Fix GDPR data export service:\n   ```typescript\n   // Example fix for GDPR data export\n   async function exportUserData(userId: number): Promise<UserDataExport> {\n     try {\n       // Get user profile data\n       const userProfile = await getUserProfile(userId);\n       \n       // Get user preferences\n       const preferences = await getUserPreferences(userId);\n       \n       // Get user favorites\n       const favorites = await getUserFavorites(userId);\n       \n       // Get user generated recipes\n       const generatedRecipes = await getUserGeneratedRecipes(userId);\n       \n       // Get user search history\n       const searchHistory = await getUserSearchHistory(userId);\n       \n       return {\n         profile: userProfile,\n         preferences: preferences,\n         favorites: favorites,\n         generatedRecipes: generatedRecipes,\n         searchHistory: searchHistory,\n         exportDate: new Date().toISOString()\n       };\n     } catch (error) {\n       console.error('GDPR export error:', error);\n       throw new DatabaseError('Failed to export user data', error);\n     }\n   }\n   ```\n2. Fix endpoint for data export requests\n3. Fix authentication and authorization checks\n4. Add proper error handling for export process\n5. Ensure all existing user data is included in export\n6. DO NOT add new data export features - only fix existing functionality\n7. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test data export for users with various data types\n3. Verify all existing user data is included in export\n4. Test authentication and authorization\n5. Verify error handling for export process\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 47,
+        "title": "Implement Comprehensive Error Handling",
+        "description": "Fix error handling across the API to ensure proper error responses and logging.",
+        "status": "pending",
+        "dependencies": [
+          39,
+          40,
+          45
+        ],
+        "priority": "high",
+        "details": "1. Create custom error classes:\n   ```typescript\n   // Example custom error classes\n   class ApiError extends Error {\n     statusCode: number;\n     \n     constructor(message: string, statusCode: number = 500) {\n       super(message);\n       this.name = this.constructor.name;\n       this.statusCode = statusCode;\n       Error.captureStackTrace(this, this.constructor);\n     }\n   }\n   \n   class ValidationError extends ApiError {\n     constructor(message: string) {\n       super(message, 400);\n     }\n   }\n   \n   class AuthenticationError extends ApiError {\n     constructor(message: string) {\n       super(message, 401);\n     }\n   }\n   \n   class AuthorizationError extends ApiError {\n     constructor(message: string) {\n       super(message, 403);\n     }\n   }\n   \n   class NotFoundError extends ApiError {\n     constructor(message: string) {\n       super(message, 404);\n     }\n   }\n   \n   class DatabaseError extends ApiError {\n     constructor(message: string, originalError?: Error) {\n       super(message, 500);\n       if (originalError) {\n         this.stack = `${this.stack}\\nCaused by: ${originalError.stack}`;\n       }\n     }\n   }\n   ```\n2. Implement global error handling middleware:\n   ```typescript\n   app.use((err: any, req: Request, res: Response, next: NextFunction) => {\n     // Log error\n     console.error('API Error:', err);\n     \n     // Send appropriate response\n     if (err instanceof ApiError) {\n       return res.status(err.statusCode).json({\n         error: err.message\n       });\n     }\n     \n     // Default error response\n     res.status(500).json({\n       error: 'Internal server error'\n     });\n   });\n   ```\n3. Replace generic error handling with specific error types\n4. Add error logging to all catch blocks\n5. Ensure consistent error response format\n6. DO NOT add new error handling features - only fix existing functionality\n7. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test error handling for various error types\n3. Verify proper status codes are returned\n4. Test validation errors with invalid input\n5. Verify error logging works correctly\n6. Verify consistent error response format\n7. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 48,
+        "title": "Fix API Performance Monitoring",
+        "description": "Fix existing performance monitoring for API endpoints using the current database structure.",
+        "status": "pending",
+        "dependencies": [
+          36,
+          40,
+          45
+        ],
+        "priority": "medium",
+        "details": "1. Fix performance monitoring middleware:\n   ```typescript\n   // Example fix for performance monitoring middleware\n   function performanceMonitoring(req: Request, res: Response, next: NextFunction) {\n     const startTime = process.hrtime();\n     \n     // Add response finished listener\n     res.on('finish', () => {\n       const hrTime = process.hrtime(startTime);\n       const responseTimeMs = hrTime[0] * 1000 + hrTime[1] / 1000000;\n       \n       // Log performance data\n       console.log(`API request: ${req.method} ${req.path} - ${responseTimeMs.toFixed(2)}ms`);\n       \n       // Log slow requests\n       if (responseTimeMs > 500) {\n         console.warn(`Slow API request: ${req.method} ${req.path} - ${responseTimeMs.toFixed(2)}ms`);\n       }\n     });\n     \n     next();\n   }\n   \n   // Apply middleware to all routes\n   app.use(performanceMonitoring);\n   ```\n2. Fix query optimization for slow endpoints\n3. Fix database query timing\n4. DO NOT add new performance monitoring features - only fix existing functionality\n5. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test performance monitoring for various endpoints\n3. Verify slow request logging works correctly\n4. Test performance under load\n5. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 49,
+        "title": "Implement Comprehensive API Testing Suite",
+        "description": "Create a testing suite to validate all existing API functionality and ensure all issues are resolved.",
+        "status": "pending",
+        "dependencies": [
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48
+        ],
+        "priority": "high",
+        "details": "1. Set up testing framework with Jest and Supertest:\n   ```typescript\n   // Example API test setup\n   import request from 'supertest';\n   import { app } from '../src/server';\n   import { db } from '../src/database';\n   \n   beforeAll(async () => {\n     // Set up test database\n     await db.migrate.latest();\n     await db.seed.run();\n   });\n   \n   afterAll(async () => {\n     // Clean up\n     await db.destroy();\n   });\n   \n   describe('Recipe API', () => {\n     it('should return a list of recipes', async () => {\n       const response = await request(app)\n         .get('/api/recipes')\n         .expect('Content-Type', /json/)\n         .expect(200);\n       \n       expect(Array.isArray(response.body)).toBe(true);\n       expect(response.body.length).toBeGreaterThan(0);\n     });\n     \n     // More tests...\n   });\n   ```\n2. Create tests for all existing API endpoints\n3. Test error handling and edge cases\n4. Test existing user workflows\n5. DO NOT test new features - only verify existing functionality\n6. Validate fixes against test-comprehensive-audit-fixed.js",
+        "testStrategy": "1. Run audit script before and after fixes to verify improvements\n2. Test all existing API endpoints with various inputs\n3. Verify error handling for all endpoints\n4. Test complete user workflows\n5. Verify all 34 audit tests are passing\n6. Document specific test cases that were failing and are now passing",
+        "subtasks": []
+      },
+      {
+        "id": 50,
+        "title": "Create System Documentation",
+        "description": "Create documentation for the fixed systems focusing only on existing functionality.",
+        "status": "pending",
+        "dependencies": [
+          49
+        ],
+        "priority": "medium",
+        "details": "1. Document existing database schema:\n   - Table structures\n   - Relationships\n   - Indexes\n\n2. Document existing API endpoints:\n   - Route definitions\n   - Request/response formats\n   - Authentication requirements\n   - Error responses\n\n3. Document existing system architecture:\n   - Component diagram\n   - Data flow\n   - Integration points\n\n4. Document testing procedures:\n   - Test coverage\n   - Manual testing steps\n   - Automated testing\n\n5. Create troubleshooting guide:\n   - Common issues\n   - Debugging steps\n   - Performance optimization\n\n6. DO NOT document new features or enhancements - only existing functionality",
+        "testStrategy": "1. Review documentation for accuracy\n2. Verify documentation covers all existing functionality\n3. Verify troubleshooting guide addresses common issues\n4. Ensure documentation is up-to-date with final implementation\n5. Verify documentation helps with understanding the existing system",
+        "subtasks": []
+      },
+      {
+        "id": 51,
+        "title": "Implement Continuous Validation System",
+        "description": "Create a continuous validation system that runs after each fix to prevent scope creep and ensure focus remains on fixing existing functionality without introducing new features.",
+        "details": "1. Create an automated validation script that runs after each task completion:\n   ```typescript\n   // validation.ts\n   import { runAuditScript } from './audit';\n   import { validateApiContracts } from './api-validator';\n   import { validateDatabaseSchema } from './db-validator';\n   import { validateFrontendBackendCompatibility } from './integration-validator';\n   \n   async function runValidation() {\n     console.log('Running post-fix validation...');\n     \n     // 1. Run the audit script to check overall system health\n     const auditResults = await runAuditScript();\n     \n     // 2. Verify no new features were added\n     const featureValidation = validateNoNewFeatures();\n     \n     // 3. Confirm API contracts remain unchanged\n     const apiValidation = await validateApiContracts();\n     \n     // 4. Validate database schema\n     const dbValidation = await validateDatabaseSchema();\n     \n     // 5. Ensure frontend-backend compatibility\n     const integrationValidation = await validateFrontendBackendCompatibility();\n     \n     // Generate validation report\n     const report = generateValidationReport(\n       auditResults,\n       featureValidation,\n       apiValidation,\n       dbValidation,\n       integrationValidation\n     );\n     \n     // Save validation report\n     await saveValidationReport(report);\n     \n     return report;\n   }\n   ```\n\n2. Implement feature drift detection:\n   ```typescript\n   // feature-validator.ts\n   import { getBaselineFeatureSet } from './baseline';\n   \n   function validateNoNewFeatures() {\n     const baselineFeatures = getBaselineFeatureSet();\n     const currentFeatures = detectCurrentFeatures();\n     \n     const newFeatures = currentFeatures.filter(\n       feature => !baselineFeatures.includes(feature)\n     );\n     \n     return {\n       valid: newFeatures.length === 0,\n       newFeatures,\n       message: newFeatures.length > 0 \n         ? `Detected ${newFeatures.length} new features: ${newFeatures.join(', ')}` \n         : 'No new features detected'\n     };\n   }\n   ```\n\n3. Implement API contract validation:\n   ```typescript\n   // api-validator.ts\n   import { getBaselineApiContracts } from './baseline';\n   import { getCurrentApiContracts } from './api-scanner';\n   \n   async function validateApiContracts() {\n     const baselineContracts = await getBaselineApiContracts();\n     const currentContracts = await getCurrentApiContracts();\n     \n     const changedContracts = [];\n     \n     // Compare each endpoint's contract\n     for (const [endpoint, contract] of Object.entries(baselineContracts)) {\n       if (!currentContracts[endpoint]) {\n         changedContracts.push({\n           endpoint,\n           issue: 'Endpoint removed'\n         });\n         continue;\n       }\n       \n       // Compare request/response schemas\n       if (!areContractsEqual(contract, currentContracts[endpoint])) {\n         changedContracts.push({\n           endpoint,\n           issue: 'Contract changed'\n         });\n       }\n     }\n     \n     return {\n       valid: changedContracts.length === 0,\n       changedContracts,\n       message: changedContracts.length > 0\n         ? `Detected ${changedContracts.length} API contract changes`\n         : 'All API contracts remain unchanged'\n     };\n   }\n   ```\n\n4. Implement database schema validation:\n   ```typescript\n   // db-validator.ts\n   import { getBaselineSchema } from './baseline';\n   import { getCurrentSchema } from './db-scanner';\n   \n   async function validateDatabaseSchema() {\n     const baselineSchema = await getBaselineSchema();\n     const currentSchema = await getCurrentSchema();\n     \n     const schemaChanges = [];\n     \n     // Compare tables\n     for (const table of baselineSchema.tables) {\n       const currentTable = currentSchema.tables.find(t => t.name === table.name);\n       \n       if (!currentTable) {\n         schemaChanges.push({\n           table: table.name,\n           issue: 'Table removed'\n         });\n         continue;\n       }\n       \n       // Compare columns\n       for (const column of table.columns) {\n         const currentColumn = currentTable.columns.find(c => c.name === column.name);\n         \n         if (!currentColumn) {\n           schemaChanges.push({\n             table: table.name,\n             column: column.name,\n             issue: 'Column removed'\n           });\n           continue;\n         }\n         \n         if (column.type !== currentColumn.type) {\n           schemaChanges.push({\n             table: table.name,\n             column: column.name,\n             issue: 'Column type changed',\n             details: `${column.type} -> ${currentColumn.type}`\n           });\n         }\n       }\n       \n       // Check for new columns\n       for (const currentColumn of currentTable.columns) {\n         if (!table.columns.some(c => c.name === currentColumn.name)) {\n           schemaChanges.push({\n             table: table.name,\n             column: currentColumn.name,\n             issue: 'New column added'\n           });\n         }\n       }\n     }\n     \n     // Check for new tables\n     for (const currentTable of currentSchema.tables) {\n       if (!baselineSchema.tables.some(t => t.name === currentTable.name)) {\n         schemaChanges.push({\n           table: currentTable.name,\n           issue: 'New table added'\n         });\n       }\n     }\n     \n     return {\n       valid: schemaChanges.length === 0,\n       schemaChanges,\n       message: schemaChanges.length > 0\n         ? `Detected ${schemaChanges.length} database schema changes`\n         : 'Database schema remains unchanged'\n     };\n   }\n   ```\n\n5. Implement frontend-backend compatibility validation:\n   ```typescript\n   // integration-validator.ts\n   import { runIntegrationTests } from './integration-tests';\n   \n   async function validateFrontendBackendCompatibility() {\n     const testResults = await runIntegrationTests();\n     \n     const failedTests = testResults.filter(test => !test.passed);\n     \n     return {\n       valid: failedTests.length === 0,\n       failedTests,\n       message: failedTests.length > 0\n         ? `${failedTests.length} integration tests failed`\n         : 'All frontend-backend integration tests passed'\n     };\n   }\n   ```\n\n6. Create a progress tracking system:\n   ```typescript\n   // progress-tracker.ts\n   import { getInitialAuditFailures } from './baseline';\n   import { getCurrentAuditResults } from './audit';\n   \n   async function trackProgressAgainstAudit() {\n     const initialFailures = await getInitialAuditFailures();\n     const currentResults = await getCurrentAuditResults();\n     \n     const resolvedIssues = [];\n     const remainingIssues = [];\n     \n     for (const issue of initialFailures) {\n       const isResolved = !currentResults.failures.some(\n         failure => failure.id === issue.id\n       );\n       \n       if (isResolved) {\n         resolvedIssues.push(issue);\n       } else {\n         remainingIssues.push(issue);\n       }\n     }\n     \n     return {\n       totalIssues: initialFailures.length,\n       resolvedIssues,\n       remainingIssues,\n       progressPercentage: (resolvedIssues.length / initialFailures.length) * 100\n     };\n   }\n   ```\n\n7. Integrate with CI/CD pipeline:\n   ```yaml\n   # .github/workflows/validation.yml\n   name: Post-Fix Validation\n   \n   on:\n     workflow_dispatch:\n     pull_request:\n       types: [closed]\n       branches: [main]\n   \n   jobs:\n     validate:\n       if: github.event.pull_request.merged == true\n       runs-on: ubuntu-latest\n       steps:\n         - uses: actions/checkout@v2\n         \n         - name: Setup Node.js\n           uses: actions/setup-node@v2\n           with:\n             node-version: '16'\n             \n         - name: Install dependencies\n           run: npm ci\n           \n         - name: Run validation\n           run: npm run validate\n           \n         - name: Upload validation report\n           uses: actions/upload-artifact@v2\n           with:\n             name: validation-report\n             path: ./validation-report.json\n   ```\n\n8. Create a validation dashboard to visualize progress and validation results after each fix.",
+        "testStrategy": "1. Verify the validation script runs automatically after each task completion:\n   - Set up a test environment with a completed task\n   - Trigger the validation process\n   - Verify the validation report is generated\n\n2. Test feature drift detection:\n   - Create a baseline feature set\n   - Introduce a new feature\n   - Verify the validation system detects the new feature\n   - Remove the new feature and verify validation passes\n\n3. Test API contract validation:\n   - Create a baseline API contract\n   - Modify an existing API endpoint (change parameters, return type, etc.)\n   - Verify the validation system detects the contract change\n   - Restore the original contract and verify validation passes\n\n4. Test database schema validation:\n   - Create a baseline database schema\n   - Add a new table or column\n   - Verify the validation system detects the schema change\n   - Remove the new table/column and verify validation passes\n\n5. Test frontend-backend compatibility:\n   - Create baseline integration tests\n   - Modify a backend API in a way that breaks frontend compatibility\n   - Verify the validation system detects the compatibility issue\n   - Fix the compatibility issue and verify validation passes\n\n6. Test progress tracking:\n   - Create a baseline audit with known failures\n   - Fix some of the failures\n   - Verify the progress tracking system correctly reports resolved and remaining issues\n   - Verify the progress percentage is calculated correctly\n\n7. Test CI/CD integration:\n   - Create a pull request with a fix\n   - Merge the pull request\n   - Verify the validation workflow runs automatically\n   - Verify the validation report is uploaded as an artifact\n\n8. Test validation dashboard:\n   - Generate multiple validation reports\n   - Verify the dashboard correctly displays validation results\n   - Verify the dashboard shows progress over time\n\n9. Test error handling:\n   - Simulate various error conditions (missing baseline, failed tests, etc.)\n   - Verify the validation system handles errors gracefully\n   - Verify error messages are clear and actionable\n\n10. Perform a complete end-to-end test:\n    - Start with a system with known audit failures\n    - Fix one issue\n    - Verify the validation system runs and correctly reports progress\n    - Verify no new features were introduced\n    - Verify API contracts remain unchanged\n    - Verify database schema remains unchanged\n    - Verify frontend-backend compatibility",
+        "status": "pending",
+        "dependencies": [
+          49,
+          50
+        ],
+        "priority": "high",
         "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-23T05:39:58.530Z",
-      "updated": "2025-07-05T01:57:52.181Z",
+      "updated": "2025-07-05T02:46:01.690Z",
       "description": "Tasks for master context"
     }
   }

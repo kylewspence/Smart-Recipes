@@ -1,0 +1,1145 @@
+{
+  "summary": {
+    "totalTests": 34,
+    "passed": 26,
+    "failed": 8,
+    "successRate": "76.5%",
+    "timestamp": "2025-07-05T04:35:29.066Z"
+  },
+  "testResults": [
+    {
+      "testName": "API Health Check",
+      "passed": true,
+      "details": "Status: healthy",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.865Z"
+    },
+    {
+      "testName": "Database Health Check",
+      "passed": true,
+      "details": "DB Status: healthy",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.867Z"
+    },
+    {
+      "testName": "404 Error Handling",
+      "passed": true,
+      "details": "Correctly returns 404",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.868Z"
+    },
+    {
+      "testName": "Auth Database Connection",
+      "passed": true,
+      "details": "User count: 10",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.870Z"
+    },
+    {
+      "testName": "User Registration",
+      "passed": false,
+      "details": "User already exists (expected)",
+      "errorDetails": {
+        "status": 409,
+        "statusText": "Conflict",
+        "data": {
+          "error": "Email already exists"
+        },
+        "headers": {
+          "x-request-id": "90f47630-3f6d-401e-af04-80786cf9be25",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-9w80liSJcf7ekEScr3O3LA==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "10;w=900",
+          "ratelimit-limit": "10",
+          "ratelimit-remaining": "3",
+          "ratelimit-reset": "891",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "32",
+          "etag": "W/\"20-N0CbDIzmlWyrjCtE3NXOzGCeBnY\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:33:53.872Z"
+    },
+    {
+      "testName": "User Login",
+      "passed": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEwLCJlbWFpbCI6ImF1ZGl0LXRlc3RAc21hcnRyZWNpcGVzLmNvbSIsIm5hbWUiOiJBdWRpdCBUZXN0IFVzZXIiLCJpYXQiOjE3NTE2OTAwMzN9.-c_ck298Sp5OQVrBOMhVLmy2KJlgXrI1Bw1xmxaeYcU",
+      "details": "Token received",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.931Z"
+    },
+    {
+      "testName": "Protected Route Access",
+      "passed": {
+        "userId": 10,
+        "email": "audit-test@smartrecipes.com",
+        "name": "Audit Test User",
+        "iat": 1751690033
+      },
+      "details": "User: Audit Test User",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.933Z"
+    },
+    {
+      "testName": "Get Users List",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/users not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "errorDetails": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint GET /api/users not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "2846c717-ce75-4515-b631-2d39bdc908bc",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-6/tEYWpvbrsjkfBvRAONRw==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "57",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "487",
+          "etag": "W/\"1e7-eJjliZUdhIxWJ9oRKevLhP9aqws\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:33:53.934Z"
+    },
+    {
+      "testName": "Get User Preferences",
+      "passed": true,
+      "details": "Preferences loaded",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.937Z"
+    },
+    {
+      "testName": "Set User Preferences",
+      "passed": false,
+      "details": {
+        "error": "User preferences already exist. Use PUT to update."
+      },
+      "errorDetails": {
+        "status": 409,
+        "statusText": "Conflict",
+        "data": {
+          "error": "User preferences already exist. Use PUT to update."
+        },
+        "headers": {
+          "x-request-id": "b676868e-c28f-41de-90b0-457ed32e0d70",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-8SHpO2Ate/G0Cr4rsfIRug==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "55",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "62",
+          "etag": "W/\"3e-mPsKCy9eE4za68PZiSDOTa5xL30\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:33:53.939Z"
+    },
+    {
+      "testName": "Get Preferences After Setting",
+      "details": "Found 0 dietary restrictions",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.942Z"
+    },
+    {
+      "testName": "Get All Ingredients",
+      "passed": true,
+      "details": "Found 50 ingredients",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.946Z"
+    },
+    {
+      "testName": "Search Ingredients",
+      "passed": true,
+      "details": "Found 2 tomato-related ingredients",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.949Z"
+    },
+    {
+      "testName": "Get Ingredients by Category",
+      "passed": true,
+      "details": "Found 1 vegetables",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.951Z"
+    },
+    {
+      "testName": "Get All Recipes",
+      "passed": true,
+      "details": "Found 20 recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:53.953Z"
+    },
+    {
+      "testName": "Generate Recipe",
+      "passed": false,
+      "details": {
+        "error": "an unexpected error occurred"
+      },
+      "errorDetails": {
+        "status": 500,
+        "statusText": "Internal Server Error",
+        "data": {
+          "error": "an unexpected error occurred"
+        },
+        "headers": {
+          "x-request-id": "5ad9a912-fc7f-4ae7-b2c5-a17760709902",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-2u+dMPJzsroeHtvhCKJjGg==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "49",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "40",
+          "etag": "W/\"28-A77dyGihGft7bAArTfJfs2gypHw\"",
+          "date": "Sat, 05 Jul 2025 04:33:54 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:33:54.462Z"
+    },
+    {
+      "testName": "Get Saved Recipes",
+      "passed": true,
+      "details": "Found 0 saved recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:55.468Z"
+    },
+    {
+      "testName": "Get Favorite Recipes",
+      "passed": true,
+      "details": "Found 0 favorite recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:56.971Z"
+    },
+    {
+      "testName": "Basic Recipe Search",
+      "passed": true,
+      "details": "Found 2 pasta recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:33:58.981Z"
+    },
+    {
+      "testName": "Advanced Recipe Search",
+      "passed": true,
+      "details": "Found 8 Italian chicken recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:01.488Z"
+    },
+    {
+      "testName": "Ingredient-based Search",
+      "passed": true,
+      "details": "Found 20 recipes with tomato and cheese, no mushroom",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:04.496Z"
+    },
+    {
+      "testName": "Get Recipe Recommendations",
+      "passed": true,
+      "details": "Found 10 recommended recipes",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:07.999Z"
+    },
+    {
+      "testName": "Get Personalized Recommendations",
+      "passed": true,
+      "details": "Found 5 personalized recommendations",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:12.006Z"
+    },
+    {
+      "testName": "Analytics Health Check",
+      "passed": true,
+      "details": "Analytics: healthy",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:16.516Z"
+    },
+    {
+      "testName": "Post Analytics Event",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint POST /api/analytics/events not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "errorDetails": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint POST /api/analytics/events not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "166597df-1f36-4a50-884d-9ef16ed64e7f",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-Bl/mMAfJ8oOjKLBT5wQ9KQ==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "40",
+          "ratelimit-reset": "859",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "499",
+          "etag": "W/\"1f3-QDXnmdmZwd++arA5RT5pLpL/WWI\"",
+          "date": "Sat, 05 Jul 2025 04:34:21 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:34:21.523Z"
+    },
+    {
+      "testName": "Get Analytics Summary",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Not Found",
+        "message": "API endpoint GET /api/analytics/summary?days=7 not found",
+        "availableEndpoints": [
+          "GET /api/health",
+          "GET /api/security-status",
+          "GET /api/db-test",
+          "GET /api/rate-limit-status",
+          "POST /api/auth/register",
+          "POST /api/auth/login",
+          "GET /api/users",
+          "POST /api/users/:userId/preferences",
+          "GET /api/users/:userId/preferences",
+          "GET /api/recipes",
+          "GET /api/ingredients",
+          "GET /api/search",
+          "GET /api/recommendations",
+          "GET /api/database/health",
+          "GET /api/migrations/status"
+        ]
+      },
+      "errorDetails": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint GET /api/analytics/summary?days=7 not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "4f62be8e-f31a-4eac-a50e-a2fdeb01c5ec",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-c6HVFHsG+Vc27hK/7SRXRw==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "39",
+          "ratelimit-reset": "854",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "506",
+          "etag": "W/\"1fa-OJo7NAFF+oJ86Omc0MrKTWcWsz4\"",
+          "date": "Sat, 05 Jul 2025 04:34:27 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:34:27.028Z"
+    },
+    {
+      "testName": "Security Test Endpoint",
+      "passed": "PROTECTED",
+      "details": "Security: PROTECTED",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:33.033Z"
+    },
+    {
+      "testName": "Rate Limiting Status",
+      "passed": {
+        "success": true,
+        "data": {
+          "identifier": "anonymous:::1",
+          "limits": {
+            "general": {
+              "window": "15 minutes",
+              "max": 100
+            },
+            "auth": {
+              "window": "15 minutes",
+              "max": 10
+            },
+            "ai": {
+              "window": "1 hour",
+              "max": 5
+            },
+            "search": {
+              "window": "5 minutes",
+              "max": 50
+            }
+          },
+          "redis": false
+        },
+        "timestamp": "2025-07-05T04:34:39.535Z"
+      },
+      "details": "Rate limiting active",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:39.536Z"
+    },
+    {
+      "testName": "XSS Protection",
+      "passed": true,
+      "details": "Malicious input correctly blocked",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:46.539Z"
+    },
+    {
+      "testName": "Privacy Policy Endpoint",
+      "passed": {
+        "lastUpdated": "2024-01-01",
+        "version": "1.0",
+        "dataCollection": {
+          "personalData": [
+            "Email address",
+            "Name",
+            "Recipe preferences",
+            "Dietary restrictions",
+            "Cooking history"
+          ],
+          "purpose": [
+            "Provide personalized recipe recommendations",
+            "Improve AI recipe generation",
+            "Account management",
+            "Security and fraud prevention"
+          ],
+          "legalBasis": "Consent and legitimate interest",
+          "retention": "2 years after account deletion or 5 years of inactivity"
+        },
+        "userRights": [
+          "Right to access your data",
+          "Right to rectification",
+          "Right to erasure (right to be forgotten)",
+          "Right to restrict processing",
+          "Right to data portability",
+          "Right to object",
+          "Right to withdraw consent"
+        ],
+        "cookies": {
+          "essential": "Required for basic functionality",
+          "analytics": "Help us understand how you use the app",
+          "marketing": "Used for personalized advertising",
+          "preferences": "Remember your settings and preferences"
+        },
+        "contact": {
+          "email": "privacy@smartrecipes.com",
+          "address": "Smart Recipes Privacy Team, [Address]"
+        }
+      },
+      "details": "Privacy policy available",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:34:54.042Z"
+    },
+    {
+      "testName": "Cookie Consent Endpoint",
+      "passed": {
+        "essential": true,
+        "analytics": false,
+        "marketing": false,
+        "preferences": false,
+        "lastUpdated": null
+      },
+      "details": "Cookie consent system working",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:35:02.046Z"
+    },
+    {
+      "testName": "GDPR Data Export",
+      "passed": false,
+      "details": {
+        "success": false,
+        "error": "Failed to export user data"
+      },
+      "errorDetails": {
+        "status": 500,
+        "statusText": "Internal Server Error",
+        "data": {
+          "success": false,
+          "error": "Failed to export user data"
+        },
+        "headers": {
+          "x-request-id": "f94647e8-ed67-4d76-b53d-f2c68addc11e",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-e1vbIbwKkNgn1H6kisB1HA==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "30;w=60",
+          "ratelimit-limit": "30",
+          "ratelimit-remaining": "27",
+          "ratelimit-reset": "44",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "54",
+          "etag": "W/\"36-n5RD0wiLrwruA8d38j4hRiN87nI\"",
+          "date": "Sat, 05 Jul 2025 04:35:10 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      },
+      "timestamp": "2025-07-05T04:35:10.554Z"
+    },
+    {
+      "testName": "Migration Status Check",
+      "passed": {
+        "applied": 0,
+        "pending": 2,
+        "migrations": [
+          {
+            "version": "20250623060000_initial_schema",
+            "name": "Initial Schema Setup",
+            "status": "pending"
+          },
+          {
+            "version": "20250624052513_add_notes_and_cooking_history",
+            "name": "add_notes_and_cooking_history",
+            "status": "pending"
+          }
+        ]
+      },
+      "details": "Migrations: 0 applied",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:35:19.560Z"
+    },
+    {
+      "testName": "Migration Validation",
+      "passed": true,
+      "details": "All migrations valid",
+      "errorDetails": null,
+      "timestamp": "2025-07-05T04:35:29.066Z"
+    }
+  ],
+  "errors": [
+    "User Registration: User already exists (expected)",
+    "Get Users List: [object Object]",
+    "Set User Preferences: [object Object]",
+    "Get Preferences After Setting: Found 0 dietary restrictions",
+    "Generate Recipe: [object Object]",
+    "Post Analytics Event: [object Object]",
+    "Get Analytics Summary: [object Object]",
+    "GDPR Data Export: [object Object]"
+  ],
+  "detailedErrors": [
+    {
+      "testName": "User Registration",
+      "error": {
+        "status": 409,
+        "statusText": "Conflict",
+        "data": {
+          "error": "Email already exists"
+        },
+        "headers": {
+          "x-request-id": "90f47630-3f6d-401e-af04-80786cf9be25",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-9w80liSJcf7ekEScr3O3LA==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "10;w=900",
+          "ratelimit-limit": "10",
+          "ratelimit-remaining": "3",
+          "ratelimit-reset": "891",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "32",
+          "etag": "W/\"20-N0CbDIzmlWyrjCtE3NXOzGCeBnY\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "Get Users List",
+      "error": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint GET /api/users not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "2846c717-ce75-4515-b631-2d39bdc908bc",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-6/tEYWpvbrsjkfBvRAONRw==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "57",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "487",
+          "etag": "W/\"1e7-eJjliZUdhIxWJ9oRKevLhP9aqws\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "Set User Preferences",
+      "error": {
+        "status": 409,
+        "statusText": "Conflict",
+        "data": {
+          "error": "User preferences already exist. Use PUT to update."
+        },
+        "headers": {
+          "x-request-id": "b676868e-c28f-41de-90b0-457ed32e0d70",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-8SHpO2Ate/G0Cr4rsfIRug==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "55",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "62",
+          "etag": "W/\"3e-mPsKCy9eE4za68PZiSDOTa5xL30\"",
+          "date": "Sat, 05 Jul 2025 04:33:53 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "Generate Recipe",
+      "error": {
+        "status": 500,
+        "statusText": "Internal Server Error",
+        "data": {
+          "error": "an unexpected error occurred"
+        },
+        "headers": {
+          "x-request-id": "5ad9a912-fc7f-4ae7-b2c5-a17760709902",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-2u+dMPJzsroeHtvhCKJjGg==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "49",
+          "ratelimit-reset": "882",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "40",
+          "etag": "W/\"28-A77dyGihGft7bAArTfJfs2gypHw\"",
+          "date": "Sat, 05 Jul 2025 04:33:54 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "Post Analytics Event",
+      "error": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint POST /api/analytics/events not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "166597df-1f36-4a50-884d-9ef16ed64e7f",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-Bl/mMAfJ8oOjKLBT5wQ9KQ==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "40",
+          "ratelimit-reset": "859",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "499",
+          "etag": "W/\"1f3-QDXnmdmZwd++arA5RT5pLpL/WWI\"",
+          "date": "Sat, 05 Jul 2025 04:34:21 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "Get Analytics Summary",
+      "error": {
+        "status": 404,
+        "statusText": "Not Found",
+        "data": {
+          "success": false,
+          "error": "Not Found",
+          "message": "API endpoint GET /api/analytics/summary?days=7 not found",
+          "availableEndpoints": [
+            "GET /api/health",
+            "GET /api/security-status",
+            "GET /api/db-test",
+            "GET /api/rate-limit-status",
+            "POST /api/auth/register",
+            "POST /api/auth/login",
+            "GET /api/users",
+            "POST /api/users/:userId/preferences",
+            "GET /api/users/:userId/preferences",
+            "GET /api/recipes",
+            "GET /api/ingredients",
+            "GET /api/search",
+            "GET /api/recommendations",
+            "GET /api/database/health",
+            "GET /api/migrations/status"
+          ]
+        },
+        "headers": {
+          "x-request-id": "4f62be8e-f31a-4eac-a50e-a2fdeb01c5ec",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-c6HVFHsG+Vc27hK/7SRXRw==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "100;w=900",
+          "ratelimit-limit": "100",
+          "ratelimit-remaining": "39",
+          "ratelimit-reset": "854",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "506",
+          "etag": "W/\"1fa-OJo7NAFF+oJ86Omc0MrKTWcWsz4\"",
+          "date": "Sat, 05 Jul 2025 04:34:27 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    },
+    {
+      "testName": "GDPR Data Export",
+      "error": {
+        "status": 500,
+        "statusText": "Internal Server Error",
+        "data": {
+          "success": false,
+          "error": "Failed to export user data"
+        },
+        "headers": {
+          "x-request-id": "f94647e8-ed67-4d76-b53d-f2c68addc11e",
+          "vary": "Origin",
+          "access-control-allow-credentials": "true",
+          "access-control-expose-headers": "X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset,X-Request-ID",
+          "content-security-policy-report-only": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'nonce-e1vbIbwKkNgn1H6kisB1HA==' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-resource-policy": "same-origin",
+          "origin-agent-cluster": "?1",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "x-content-type-options": "nosniff",
+          "x-dns-prefetch-control": "off",
+          "x-download-options": "noopen",
+          "x-frame-options": "DENY",
+          "x-permitted-cross-domain-policies": "none",
+          "x-xss-protection": "1; mode=block",
+          "x-api-version": "1.0",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "no-store, no-cache, must-revalidate, private",
+          "pragma": "no-cache",
+          "expires": "0",
+          "content-security-policy": "default-src 'self';style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: https: blob: *.vercel.app;script-src 'self' 'unsafe-eval' https://vercel.live;connect-src 'self' https://api.openai.com https://vitals.vercel-insights.com wss:;frame-src 'none';object-src 'none';media-src 'self' blob:;worker-src 'self' blob:;child-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'self';script-src-attr 'none';upgrade-insecure-requests",
+          "permissions-policy": "geolocation=(), microphone=(), camera=()",
+          "ratelimit-policy": "30;w=60",
+          "ratelimit-limit": "30",
+          "ratelimit-remaining": "27",
+          "ratelimit-reset": "44",
+          "content-type": "application/json; charset=utf-8",
+          "content-length": "54",
+          "etag": "W/\"36-n5RD0wiLrwruA8d38j4hRiN87nI\"",
+          "date": "Sat, 05 Jul 2025 04:35:10 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5"
+        }
+      }
+    }
+  ],
+  "recommendations": [
+    "Review failed tests and fix underlying issues",
+    "Check database connectivity and schema",
+    "Verify all environment variables are set correctly",
+    "Ensure all required services are running",
+    "Check route mounting in server configuration"
+  ]
+}

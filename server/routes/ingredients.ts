@@ -19,8 +19,8 @@ const updateIngredientSchema = z.object({
 const ingredientSearchSchema = z.object({
     query: z.string().optional(),
     category: z.string().optional(),
-    limit: z.number().int().positive().max(100).default(50),
-    offset: z.number().int().min(0).default(0),
+    limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 50).pipe(z.number().int().positive().max(100)),
+    offset: z.string().optional().transform(val => val ? parseInt(val, 10) : 0).pipe(z.number().int().min(0)),
     sortBy: z.enum(['name', 'category', 'usage', 'recent']).default('name'),
     sortOrder: z.enum(['asc', 'desc']).default('asc')
 });
@@ -55,7 +55,7 @@ router.get('/', async (req, res, next) => {
         }
 
         if (searchParams.category) {
-            whereConditions.push(`i."category" ILIKE $${paramIndex}`);
+            whereConditions.push(`ic."name" ILIKE $${paramIndex}`);
             queryParams.push(searchParams.category);
             paramIndex++;
         }
@@ -69,7 +69,7 @@ router.get('/', async (req, res, next) => {
                 orderBy = `ORDER BY i."name" ${searchParams.sortOrder.toUpperCase()}`;
                 break;
             case 'category':
-                orderBy = `ORDER BY i."category" ${searchParams.sortOrder.toUpperCase()}, i."name" ASC`;
+                orderBy = `ORDER BY ic."name" ${searchParams.sortOrder.toUpperCase()}, i."name" ASC`;
                 break;
             case 'usage':
                 orderBy = `ORDER BY usage_count ${searchParams.sortOrder.toUpperCase()}, i."name" ASC`;
@@ -84,6 +84,9 @@ router.get('/', async (req, res, next) => {
 
         const searchQuery = `
             SELECT i.*, 
+                   ic."name" as categoryName,
+                   ic."description" as categoryDescription,
+                   ic."color" as categoryColor,
                    COALESCE(
                        (SELECT COUNT(*)
                         FROM "recipeIngredients" ri
@@ -95,6 +98,7 @@ router.get('/', async (req, res, next) => {
                         WHERE uip."ingredientId" = i."ingredientId"
                        ), 0) as preference_count
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             ${whereClause}
             ${orderBy}
             LIMIT $${paramIndex++} OFFSET $${paramIndex++}
@@ -106,21 +110,118 @@ router.get('/', async (req, res, next) => {
         const countQuery = `
             SELECT COUNT(*) as total
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             ${whereClause}
         `;
         const countResult = await db.query(countQuery, queryParams.slice(0, -2));
 
+        res.json(results.rows);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Get all ingredient categories (simple list)
+ * GET /api/ingredients/categories
+ */
+router.get('/categories', async (req, res, next) => {
+    try {
+        const categoriesResult = await db.query(`
+            SELECT 
+                ic."categoryId",
+                ic."name" as category,
+                ic."description",
+                ic."color"
+            FROM "ingredientCategories" ic
+            WHERE ic."isActive" = true
+            ORDER BY ic."sortOrder" ASC, ic."name" ASC
+        `);
+
         res.json({
             success: true,
-            data: {
-                ingredients: results.rows,
-                pagination: {
-                    total: parseInt(countResult.rows[0].total),
-                    limit: searchParams.limit,
-                    offset: searchParams.offset,
-                    hasMore: (searchParams.offset + searchParams.limit) < parseInt(countResult.rows[0].total)
-                }
-            }
+            data: categoriesResult.rows
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Get all ingredient categories with statistics
+ * GET /api/ingredients/categories/list
+ */
+router.get('/categories/list', async (req, res, next) => {
+    try {
+        const categoriesResult = await db.query(`
+            SELECT 
+                ic."categoryId",
+                ic."name" as category,
+                ic."description",
+                ic."color",
+                COUNT(i."ingredientId") as ingredient_count,
+                COUNT(DISTINCT ri."recipeId") as recipe_count,
+                COUNT(DISTINCT uip."userId") as user_preference_count,
+                COALESCE(AVG(CASE 
+                    WHEN uip."preference" = 'like' THEN 3
+                    WHEN uip."preference" = 'stretch' THEN 2  
+                    WHEN uip."preference" = 'dislike' THEN 1
+                    ELSE 2
+                END), 2) as avg_preference_score
+            FROM "ingredientCategories" ic
+            LEFT JOIN "ingredients" i ON ic."categoryId" = i."categoryId"
+            LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
+            LEFT JOIN "userIngredientPreferences" uip ON i."ingredientId" = uip."ingredientId"
+            WHERE ic."isActive" = true
+            GROUP BY ic."categoryId", ic."name", ic."description", ic."color"
+            ORDER BY ingredient_count DESC
+        `);
+
+        // Get most popular ingredients per category
+        const popularIngredientsResult = await db.query(`
+            WITH ingredient_usage AS (
+                SELECT 
+                    i."ingredientId",
+                    i."name",
+                    ic."name" as category,
+                    i."categoryId",
+                    COUNT(DISTINCT ri."recipeId") as recipe_count,
+                    ROW_NUMBER() OVER (PARTITION BY i."categoryId" ORDER BY COUNT(DISTINCT ri."recipeId") DESC) as rank
+                FROM "ingredients" i
+                LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
+                LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
+                WHERE i."isActive" = true AND ic."isActive" = true
+                GROUP BY i."ingredientId", i."name", ic."name", i."categoryId"
+            )
+            SELECT 
+                category,
+                json_agg(
+                    json_build_object(
+                        'ingredientId', "ingredientId",
+                        'name', name,
+                        'recipeCount', recipe_count
+                    ) ORDER BY recipe_count DESC
+                ) as top_ingredients
+            FROM ingredient_usage
+            WHERE rank <= 5
+            GROUP BY category
+        `);
+
+        // Create a map for easy lookup
+        const topIngredientsMap: { [key: string]: any[] } = {};
+        popularIngredientsResult.rows.forEach((row: any) => {
+            topIngredientsMap[row.category] = row.top_ingredients;
+        });
+
+        // Add top ingredients to category stats
+        const enrichedCategories = categoriesResult.rows.map((category: any) => ({
+            ...category,
+            topIngredients: topIngredientsMap[category.category] || []
+        }));
+
+        res.json({
+            success: true,
+            data: enrichedCategories
         });
     } catch (err) {
         next(err);
@@ -211,10 +312,22 @@ router.post('/', async (req, res, next) => {
             throw new ClientError(409, 'Ingredient already exists');
         }
 
+        // Get categoryId from category name if provided
+        let categoryId = 1; // Default to first category
+        if (ingredientData.category) {
+            const categoryResult = await db.query(
+                'SELECT "categoryId" FROM "ingredientCategories" WHERE LOWER("name") = LOWER($1) AND "isActive" = true',
+                [ingredientData.category]
+            );
+            if (categoryResult.rows.length > 0) {
+                categoryId = categoryResult.rows[0].categoryId;
+            }
+        }
+
         // Create the ingredient
         const result = await db.query(
-            'INSERT INTO "ingredients" ("name", "category") VALUES ($1, $2) RETURNING *',
-            [ingredientData.name, ingredientData.category || 'other']
+            'INSERT INTO "ingredients" ("name", "categoryId") VALUES ($1, $2) RETURNING *',
+            [ingredientData.name, categoryId]
         );
 
         res.status(201).json({
@@ -269,8 +382,19 @@ router.put('/:ingredientId', async (req, res, next) => {
         }
 
         if (updateData.category !== undefined) {
-            updateFields.push(`"category" = $${valueCounter++}`);
-            updateValues.push(updateData.category);
+            // Convert category name to categoryId
+            let categoryId = null;
+            if (updateData.category) {
+                const categoryResult = await db.query(
+                    'SELECT "categoryId" FROM "ingredientCategories" WHERE LOWER("name") = LOWER($1) AND "isActive" = true',
+                    [updateData.category]
+                );
+                if (categoryResult.rows.length > 0) {
+                    categoryId = categoryResult.rows[0].categoryId;
+                }
+            }
+            updateFields.push(`"categoryId" = $${valueCounter++}`);
+            updateValues.push(categoryId);
         }
 
         if (updateFields.length === 0) {
@@ -375,10 +499,22 @@ router.post('/bulk', async (req, res, next) => {
                     });
                     skipped++;
                 } else {
+                    // Get categoryId from category name if provided
+                    let categoryId = 1; // Default to first category
+                    if (ingredientData.category) {
+                        const categoryResult = await db.query(
+                            'SELECT "categoryId" FROM "ingredientCategories" WHERE LOWER("name") = LOWER($1) AND "isActive" = true',
+                            [ingredientData.category]
+                        );
+                        if (categoryResult.rows.length > 0) {
+                            categoryId = categoryResult.rows[0].categoryId;
+                        }
+                    }
+
                     // Create the ingredient
                     const result = await db.query(
-                        'INSERT INTO "ingredients" ("name", "category") VALUES ($1, $2) RETURNING *',
-                        [ingredientData.name, ingredientData.category || 'other']
+                        'INSERT INTO "ingredients" ("name", "categoryId") VALUES ($1, $2) RETURNING *',
+                        [ingredientData.name, categoryId]
                     );
 
                     results.push({
@@ -414,79 +550,6 @@ router.post('/bulk', async (req, res, next) => {
 // ===== CATEGORY MANAGEMENT =====
 
 /**
- * Get all ingredient categories with statistics
- * GET /api/ingredients/categories
- */
-router.get('/categories/list', async (req, res, next) => {
-    try {
-        const categoriesResult = await db.query(`
-            SELECT 
-                i."category",
-                COUNT(*) as ingredient_count,
-                COUNT(DISTINCT ri."recipeId") as recipe_count,
-                COUNT(DISTINCT uip."userId") as user_preference_count,
-                COALESCE(AVG(CASE 
-                    WHEN uip."preference" = 'like' THEN 3
-                    WHEN uip."preference" = 'stretch' THEN 2  
-                    WHEN uip."preference" = 'dislike' THEN 1
-                    ELSE 2
-                END), 2) as avg_preference_score
-            FROM "ingredients" i
-            LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
-            LEFT JOIN "userIngredientPreferences" uip ON i."ingredientId" = uip."ingredientId"
-            GROUP BY i."category"
-            ORDER BY ingredient_count DESC
-        `);
-
-        // Get most popular ingredients per category
-        const popularIngredientsResult = await db.query(`
-            WITH ingredient_usage AS (
-                SELECT 
-                    i."ingredientId",
-                    i."name",
-                    i."category",
-                    COUNT(DISTINCT ri."recipeId") as recipe_count,
-                    ROW_NUMBER() OVER (PARTITION BY i."category" ORDER BY COUNT(DISTINCT ri."recipeId") DESC) as rank
-                FROM "ingredients" i
-                LEFT JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
-                GROUP BY i."ingredientId", i."name", i."category"
-            )
-            SELECT 
-                category,
-                json_agg(
-                    json_build_object(
-                        'ingredientId', "ingredientId",
-                        'name', name,
-                        'recipeCount', recipe_count
-                    ) ORDER BY recipe_count DESC
-                ) as top_ingredients
-            FROM ingredient_usage
-            WHERE rank <= 5
-            GROUP BY category
-        `);
-
-        // Create a map for easy lookup
-        const topIngredientsMap = {};
-        popularIngredientsResult.rows.forEach(row => {
-            topIngredientsMap[row.category] = row.top_ingredients;
-        });
-
-        // Add top ingredients to category stats
-        const enrichedCategories = categoriesResult.rows.map(category => ({
-            ...category,
-            topIngredients: topIngredientsMap[category.category] || []
-        }));
-
-        res.json({
-            success: true,
-            data: enrichedCategories
-        });
-    } catch (err) {
-        next(err);
-    }
-});
-
-/**
  * Update ingredient category in bulk
  * PUT /api/ingredients/categories/bulk
  */
@@ -512,12 +575,24 @@ router.put('/categories/bulk', async (req, res, next) => {
             throw new ClientError(400, 'All ingredient IDs must be positive integers');
         }
 
+        // Get categoryId from category name
+        const categoryResult = await db.query(
+            'SELECT "categoryId" FROM "ingredientCategories" WHERE LOWER("name") = LOWER($1) AND "isActive" = true',
+            [newCategory]
+        );
+
+        if (categoryResult.rows.length === 0) {
+            throw new ClientError(400, `Category "${newCategory}" not found`);
+        }
+
+        const categoryId = categoryResult.rows[0].categoryId;
+
         const result = await db.query(
             `UPDATE "ingredients" 
-             SET "category" = $1 
+             SET "categoryId" = $1 
              WHERE "ingredientId" = ANY($2)
-             RETURNING "ingredientId", "name", "category"`,
-            [newCategory, validIds]
+             RETURNING "ingredientId", "name", "categoryId"`,
+            [categoryId, validIds]
         );
 
         res.json({
@@ -560,7 +635,7 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
         }
 
         if (searchParams.category) {
-            whereConditions.push(`i."category" ILIKE $${paramIndex}`);
+            whereConditions.push(`ic."name" ILIKE $${paramIndex}`);
             queryParams.push(searchParams.category);
             paramIndex++;
         }
@@ -572,6 +647,9 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
 
         const query = `
             SELECT i.*, 
+                   ic."name" as categoryName,
+                   ic."description" as categoryDescription,
+                   ic."color" as categoryColor,
                    COALESCE(uip."preference", 'none') as user_preference,
                    COALESCE(
                        (SELECT COUNT(*)
@@ -579,6 +657,7 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
                         WHERE ri."ingredientId" = i."ingredientId"
                        ), 0) as usage_count
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             LEFT JOIN "userIngredientPreferences" uip ON i."ingredientId" = uip."ingredientId" AND uip."userId" = $1
             ${whereClause}
             ORDER BY i."name" ASC
@@ -591,22 +670,12 @@ router.get('/with-preferences/:userId', async (req, res, next) => {
         const countQuery = `
             SELECT COUNT(*) as total
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             ${whereClause.replace('WHERE TRUE AND', 'WHERE')}
         `;
         const countResult = await db.query(countQuery, queryParams.slice(1, -2)); // Remove userId and pagination
 
-        res.json({
-            success: true,
-            data: {
-                ingredients: results.rows,
-                pagination: {
-                    total: Number(countResult.rows[0].total),
-                    limit: searchParams.limit,
-                    offset: searchParams.offset,
-                    hasMore: (searchParams.offset + searchParams.limit) < Number(countResult.rows[0].total)
-                }
-            }
-        });
+        res.json(results.rows);
     } catch (err) {
         next(err);
     }
@@ -635,7 +704,7 @@ router.get('/suggestions/discover', async (req, res, next) => {
         }
 
         if (category) {
-            whereConditions.push(`i."category" ILIKE $${paramIndex}`);
+            whereConditions.push(`ic."name" ILIKE $${paramIndex}`);
             queryParams.push(`%${category}%`);
             paramIndex++;
         }
@@ -646,14 +715,18 @@ router.get('/suggestions/discover', async (req, res, next) => {
 
         const suggestionsQuery = `
             SELECT i.*, 
+                   ic."name" as categoryName,
+                   ic."description" as categoryDescription,
+                   ic."color" as categoryColor,
                    COUNT(DISTINCT ri."recipeId") as recipe_count,
                    COUNT(DISTINCT r."cuisine") as cuisine_count,
                    array_agg(DISTINCT r."cuisine") FILTER (WHERE r."cuisine" IS NOT NULL) as cuisines
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
             JOIN "recipes" r ON ri."recipeId" = r."recipeId"
             ${whereClause}
-            GROUP BY i."ingredientId", i."name", i."category"
+            GROUP BY i."ingredientId", i."name", i."categoryId", ic."name", ic."description", ic."color"
             ORDER BY recipe_count DESC, i."name" ASC
             LIMIT $${paramIndex}
         `;
@@ -688,6 +761,9 @@ router.get('/trending/popular', async (req, res, next) => {
 
         const trendingQuery = `
             SELECT i.*, 
+                   ic."name" as categoryName,
+                   ic."description" as categoryDescription,
+                   ic."color" as categoryColor,
                    COUNT(DISTINCT ri."recipeId") as recent_usage,
                    COUNT(DISTINCT r."userId") as user_count,
                    ROUND(
@@ -696,10 +772,11 @@ router.get('/trending/popular', async (req, res, next) => {
                        2
                    ) as usage_percentage
             FROM "ingredients" i
+            LEFT JOIN "ingredientCategories" ic ON i."categoryId" = ic."categoryId"
             JOIN "recipeIngredients" ri ON i."ingredientId" = ri."ingredientId"
             JOIN "recipes" r ON ri."recipeId" = r."recipeId"
             WHERE r."createdAt" >= NOW() - INTERVAL '${daysNum} days'
-            GROUP BY i."ingredientId", i."name", i."category"
+            GROUP BY i."ingredientId", i."name", i."categoryId", ic."name", ic."description", ic."color"
             HAVING COUNT(DISTINCT ri."recipeId") >= 2
             ORDER BY recent_usage DESC, user_count DESC
             LIMIT $1
