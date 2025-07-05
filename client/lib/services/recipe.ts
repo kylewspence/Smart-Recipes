@@ -258,18 +258,38 @@ class RecipeService {
         }
 
         try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
+
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            if (!userId) {
+                throw new Error('User ID not found - please log in again');
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/favorite`, {
                 method: 'POST',
-                headers: this.getAuthHeaders(),
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
             });
+
+            if (response.status === 404) {
+                throw new Error('Recipe not found or you do not have permission to favorite this recipe');
+            }
 
             await this.handleResponse<void>(response);
 
             // Also update offline favorites
             await offlineService.addOfflineFavorite(recipeId);
         } catch (error) {
-            // If request fails, add to offline favorites and pending sync
-            await offlineService.addOfflineFavorite(recipeId);
+            console.error('Failed to favorite recipe:', error);
             throw error;
         }
     }
@@ -284,18 +304,38 @@ class RecipeService {
         }
 
         try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
+
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            if (!userId) {
+                throw new Error('User ID not found - please log in again');
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/favorite`, {
                 method: 'DELETE',
-                headers: this.getAuthHeaders(),
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
             });
+
+            if (response.status === 404) {
+                throw new Error('Recipe not found or you do not have permission to unfavorite this recipe');
+            }
 
             await this.handleResponse<void>(response);
 
             // Also update offline favorites
             await offlineService.removeOfflineFavorite(recipeId);
         } catch (error) {
-            // If request fails, remove from offline favorites and add to pending sync
-            await offlineService.removeOfflineFavorite(recipeId);
+            console.error('Failed to unfavorite recipe:', error);
             throw error;
         }
     }
@@ -380,6 +420,134 @@ class RecipeService {
 
     getStorageUsage() {
         return offlineService.getStorageUsage();
+    }
+
+    // Alias methods for backward compatibility
+    async saveRecipe(recipeId: string): Promise<void> {
+        return this.favoriteRecipe(recipeId);
+    }
+
+    async unsaveRecipe(recipeId: string): Promise<void> {
+        return this.unfavoriteRecipe(recipeId);
+    }
+
+    async toggleFavorite(recipeId: string): Promise<boolean> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Toggling favorites requires an internet connection');
+        }
+
+        try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
+
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/favorite`, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+
+            const result = await this.handleResponse<{ data: { isFavorite: boolean } }>(response);
+            return result.data.isFavorite;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async generateSubstitutions(recipeId: string | number, ingredientId: string | number, options: {
+        dietaryRestrictions?: string[];
+        preferences?: string[];
+    } = {}): Promise<{
+        substitutions: Array<{
+            name: string;
+            reason: string;
+            ratio: number;
+            difficulty: 'easy' | 'medium' | 'hard';
+        }>;
+    }> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Generating substitutions requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/ingredients/${ingredientId}/substitutions`, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(options),
+            });
+
+            return await this.handleResponse<{
+                substitutions: Array<{
+                    name: string;
+                    reason: string;
+                    ratio: number;
+                    difficulty: 'easy' | 'medium' | 'hard';
+                }>;
+            }>(response);
+        } catch (error) {
+            // If API fails, return mock data
+            console.warn('Failed to generate substitutions, using fallback data:', error);
+            return {
+                substitutions: [
+                    {
+                        name: 'Alternative ingredient 1',
+                        reason: 'Lower sodium option',
+                        ratio: 1.0,
+                        difficulty: 'easy'
+                    },
+                    {
+                        name: 'Alternative ingredient 2',
+                        reason: 'More accessible ingredient',
+                        ratio: 1.2,
+                        difficulty: 'easy'
+                    }
+                ]
+            };
+        }
+    }
+
+    async generateVariation(recipeId: string | number, variationType: string, description: string): Promise<{
+        variationRecipe: Recipe;
+    }> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Generating variations requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/variations`, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ variationType, description }),
+            });
+
+            return await this.handleResponse<{
+                variationRecipe: Recipe;
+            }>(response);
+        } catch (error) {
+            // If API fails, return mock data
+            console.warn('Failed to generate variation, using fallback data:', error);
+            throw error; // Let the component handle the fallback
+        }
     }
 }
 

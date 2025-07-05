@@ -176,9 +176,9 @@ export default function RecipeDisplay({
         setIsLoading(true);
         try {
             if (localIsSaved) {
-                await recipeService.unsaveRecipe(recipe.id);
+                await recipeService.unsaveRecipe(recipe.id.toString());
             } else {
-                await recipeService.saveRecipe(recipe.id);
+                await recipeService.saveRecipe(recipe.id.toString());
             }
             setLocalIsSaved(!localIsSaved);
             onSave?.();
@@ -194,8 +194,8 @@ export default function RecipeDisplay({
 
         setIsLoading(true);
         try {
-            const result = await recipeService.toggleFavorite(recipe.id);
-            setLocalIsLiked(result.isFavorite);
+            const result = await recipeService.toggleFavorite(recipe.id.toString());
+            setLocalIsLiked(result);
         } catch (error) {
             console.error('Failed to toggle favorite:', error);
         } finally {
@@ -208,7 +208,7 @@ export default function RecipeDisplay({
 
         setIsLoading(true);
         try {
-            await recipeService.rateRecipe(recipe.id, rating);
+            await recipeService.rateRecipe(recipe.id.toString(), rating);
             setCurrentRating(rating);
             onRate?.(rating);
         } catch (error) {
@@ -416,7 +416,7 @@ export default function RecipeDisplay({
                             </div>
                             <span className="text-sm text-gray-600 dark:text-gray-400 block">Servings</span>
                             <span className="font-semibold text-gray-900 dark:text-white">
-                                {recipe.servings || 4}
+                                {customizedRecipe.servings || 4}
                             </span>
                         </div>
                         <div className="text-center">
@@ -472,7 +472,7 @@ export default function RecipeDisplay({
                         Ingredients
                     </h3>
                     <div className="space-y-3">
-                        {recipe.ingredients?.map((ingredient, index) => (
+                        {customizedRecipe.ingredients?.map((ingredient, index) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, x: -20 }}
@@ -509,22 +509,31 @@ export default function RecipeDisplay({
                         Instructions
                     </h3>
                     <div className="space-y-4">
-                        {recipe.instructions?.map((instruction, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="flex space-x-4 group"
-                            >
-                                <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-orange-600 transition-colors">
-                                    {index + 1}
-                                </div>
-                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed pt-1 flex-1">
-                                    {instruction}
-                                </p>
-                            </motion.div>
-                        ))}
+                        {(() => {
+                            // Handle both string and array formats for instructions
+                            const instructions: string[] = Array.isArray(customizedRecipe.instructions)
+                                ? customizedRecipe.instructions
+                                : (typeof customizedRecipe.instructions === 'string'
+                                    ? customizedRecipe.instructions.split(/\d+\.\s*/).filter(Boolean)
+                                    : []);
+
+                            return instructions.map((instruction: string, index: number) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="flex space-x-4 group"
+                                >
+                                    <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-sm group-hover:bg-orange-600 transition-colors">
+                                        {index + 1}
+                                    </div>
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed pt-1 flex-1">
+                                        {instruction.trim()}
+                                    </p>
+                                </motion.div>
+                            ));
+                        })()}
                     </div>
                 </div>
 
@@ -572,7 +581,11 @@ export default function RecipeDisplay({
                                         ingredients: recipe.ingredients?.map(ing =>
                                             typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.name || ing}`.trim()
                                         ),
-                                        instructions: recipe.instructions,
+                                        instructions: Array.isArray(recipe.instructions)
+                                            ? recipe.instructions
+                                            : (typeof recipe.instructions === 'string'
+                                                ? recipe.instructions.split(/\d+\.\s*/).filter(Boolean)
+                                                : []),
                                         tags: recipe.tags
                                     }}
                                 />

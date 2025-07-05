@@ -24,6 +24,7 @@ interface PreferenceChanges {
 
 export default function PreferenceManager() {
     const { user } = useAuth();
+    console.log('🔍 PreferenceManager: Component rendered with user:', user);
 
     // State management
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -48,21 +49,26 @@ export default function PreferenceManager() {
 
     // Load user preferences
     const loadPreferences = useCallback(async () => {
-        if (!user?.id) return;
+        if (!user?.userId) {
+            console.log('❌ PreferenceManager: No user or userId found', { user });
+            return;
+        }
 
+        console.log('🔄 PreferenceManager: Loading preferences for user:', user.userId);
         try {
             setLoading(true);
             const userPrefs = await preferencesService.getUserPreferences(user.userId.toString());
+            console.log('✅ PreferenceManager: Loaded preferences:', userPrefs);
             setPreferences(userPrefs);
             setOriginalPreferences(JSON.parse(JSON.stringify(userPrefs))); // Deep copy
             setChanges({ dietary: false, cooking: false, ingredients: false });
         } catch (error: any) {
-            console.error('Failed to load preferences:', error);
+            console.error('❌ PreferenceManager: Failed to load preferences:', error);
             setMessage('Failed to load your preferences. Please try again.');
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.userId]);
 
     useEffect(() => {
         loadPreferences();
@@ -100,7 +106,7 @@ export default function PreferenceManager() {
 
     // Save preferences
     const savePreferences = async () => {
-        if (!user?.id || !preferences) return;
+        if (!user?.userId || !preferences) return;
 
         try {
             setSaving(true);
@@ -224,18 +230,18 @@ export default function PreferenceManager() {
     };
 
     const handleApplyImport = async () => {
-        if (!importPreview || !user?.id) return;
+        if (!importPreview || !user?.userId) return;
 
         try {
             setSaving(true);
             setMessage('');
 
             // Apply the imported preferences
-            await preferencesService.updateUserPreferences(user.id.toString(), importPreview);
+            await preferencesService.updateUserPreferences(user.userId.toString(), importPreview);
 
             if (importPreview.ingredientPreferences?.length) {
                 await preferencesService.bulkUpdateIngredientPreferences(
-                    user.id.toString(),
+                    user.userId.toString(),
                     importPreview.ingredientPreferences
                 );
             }
@@ -344,6 +350,17 @@ export default function PreferenceManager() {
 
                             <Button
                                 variant="outline"
+                                onClick={() => window.location.href = '/onboarding'}
+                                className="flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                                Guided Setup
+                            </Button>
+
+                            <Button
+                                variant="outline"
                                 onClick={resetPreferences}
                                 disabled={!hasChanges || saving}
                             >
@@ -441,6 +458,33 @@ export default function PreferenceManager() {
                                 <p className="text-muted-foreground mb-4">
                                     Update your dietary restrictions and allergies to get personalized recipes
                                 </p>
+                            </div>
+
+                            {/* Guided Setup Info */}
+                            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                                            Want a guided experience?
+                                        </h4>
+                                        <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                                            Use our step-by-step questionnaire to set up all your preferences at once. It's the same process new users go through when they first sign up.
+                                        </p>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => window.location.href = '/onboarding'}
+                                            className="text-blue-700 border-blue-300 hover:bg-blue-100 dark:text-blue-300 dark:border-blue-600 dark:hover:bg-blue-900/20"
+                                        >
+                                            Start Guided Setup
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Dietary Restrictions */}

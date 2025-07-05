@@ -4,7 +4,7 @@ export interface Recipe {
     title: string;
     description: string;
     ingredients: RecipeIngredient[];
-    instructions: string[];
+    instructions: string[] | string; // Allow both array and string formats
     cookingTime: number;
     prepTime: number;
     servings: number;

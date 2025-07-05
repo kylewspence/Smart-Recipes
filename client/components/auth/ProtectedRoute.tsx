@@ -14,7 +14,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({
     children,
-    redirectTo = '/auth/login',
+    redirectTo = '/login',
     requireAuth = true,
     requireRole,
     fallback
@@ -85,7 +85,7 @@ function LoadingSpinner() {
 }
 
 // Hook for easy protection of pages
-export function useRequireAuth(redirectTo?: string) {
+export function useRequireAuth(redirectTo: string = '/login') {
     const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
 
@@ -93,7 +93,7 @@ export function useRequireAuth(redirectTo?: string) {
         if (!isLoading && !isAuthenticated) {
             const currentPath = window.location.pathname + window.location.search;
             sessionStorage.setItem('redirectAfterLogin', currentPath);
-            router.push(redirectTo || '/auth/login');
+            router.push(redirectTo);
         }
     }, [isAuthenticated, isLoading, router, redirectTo]);
 

@@ -1,0 +1,189 @@
+{
+  "summary": {
+    "total": 11,
+    "passed": 7,
+    "failed": 4,
+    "endpoints": 11
+  },
+  "timestamp": "2025-07-05T01:48:51.920Z",
+  "testUser": null,
+  "results": [
+    {
+      "endpoint": "/api/auth/register",
+      "method": "POST",
+      "status": 400,
+      "success": false,
+      "details": "Registration failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.843Z"
+    },
+    {
+      "endpoint": "/api/auth/login",
+      "method": "POST",
+      "status": 401,
+      "success": false,
+      "details": "Login failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.902Z"
+    },
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 401,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.904Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.906Z"
+    },
+    {
+      "endpoint": "/api/database/health",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Database health check passed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.908Z"
+    },
+    {
+      "endpoint": "/api/database/pool-stats",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Database pool stats retrieved",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.909Z"
+    },
+    {
+      "endpoint": "/api/security/test",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Security test passed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.910Z"
+    },
+    {
+      "endpoint": "/api/privacy/policy",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Privacy policy retrieved",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.911Z"
+    },
+    {
+      "endpoint": "/api/privacy/cookie-consent",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Cookie consent retrieved",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.913Z"
+    },
+    {
+      "endpoint": "/api/migrations/status",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Migration status retrieved",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.918Z"
+    },
+    {
+      "endpoint": "/api/migrations/validate",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Migration validation passed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.920Z"
+    }
+  ],
+  "failedTests": [
+    {
+      "endpoint": "/api/auth/register",
+      "method": "POST",
+      "status": 400,
+      "success": false,
+      "details": "Registration failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.843Z"
+    },
+    {
+      "endpoint": "/api/auth/login",
+      "method": "POST",
+      "status": 401,
+      "success": false,
+      "details": "Login failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.902Z"
+    },
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 401,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.904Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.906Z"
+    }
+  ],
+  "criticalIssues": [],
+  "clientErrors": [
+    {
+      "endpoint": "/api/auth/register",
+      "method": "POST",
+      "status": 400,
+      "success": false,
+      "details": "Registration failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.843Z"
+    },
+    {
+      "endpoint": "/api/auth/login",
+      "method": "POST",
+      "status": 401,
+      "success": false,
+      "details": "Login failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.902Z"
+    },
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 401,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.904Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "timestamp": "2025-07-05T01:48:51.906Z"
+    }
+  ],
+  "networkErrors": []
+}

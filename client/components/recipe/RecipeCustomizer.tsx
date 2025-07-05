@@ -143,9 +143,16 @@ export default function RecipeCustomizer({
                 throw new Error('Recipe ID is required for substitutions');
             }
 
+            // Use ingredientId if available, otherwise fall back to id
+            const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+
+            if (!ingredientId || typeof ingredientId !== 'number') {
+                throw new Error(`Invalid ingredient ID for ${ingredient.name}`);
+            }
+
             const response = await recipeService.generateSubstitutions(
                 recipe.id,
-                ingredient.id,
+                ingredientId,
                 {
                     dietaryRestrictions: [], // Could be passed from user preferences
                     preferences: []
@@ -153,7 +160,11 @@ export default function RecipeCustomizer({
             );
 
             setIngredientSubstitutions(prev => [
-                ...prev.filter(sub => sub.originalIngredient.id !== ingredient.id),
+                ...prev.filter(sub => {
+                    const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                    const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+                    return subIngredientId !== ingredientId;
+                }),
                 {
                     originalIngredient: ingredient,
                     suggestedSubstitutions: response.substitutions
@@ -178,7 +189,11 @@ export default function RecipeCustomizer({
             ];
 
             setIngredientSubstitutions(prev => [
-                ...prev.filter(sub => sub.originalIngredient.id !== ingredient.id),
+                ...prev.filter(sub => {
+                    const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                    const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+                    return subIngredientId !== ingredientId;
+                }),
                 {
                     originalIngredient: ingredient,
                     suggestedSubstitutions: mockSubstitutions
@@ -231,11 +246,13 @@ export default function RecipeCustomizer({
     // Apply substitution to ingredient
     const applySubstitution = (originalIngredientId: number, substitution: any) => {
         setIngredientSubstitutions(prev =>
-            prev.map(sub =>
-                sub.originalIngredient.id === originalIngredientId
+            prev.map(sub => {
+                // Check both id and ingredientId for compatibility
+                const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                return subIngredientId === originalIngredientId
                     ? { ...sub, selectedSubstitution: substitution }
-                    : sub
-            )
+                    : sub;
+            })
         );
     };
 
@@ -246,7 +263,11 @@ export default function RecipeCustomizer({
             servings: customServings,
             ingredients: scaledIngredients.map(ingredient => {
                 const substitution = ingredientSubstitutions.find(
-                    sub => sub.originalIngredient.id === ingredient.id
+                    sub => {
+                        const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                        const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+                        return subIngredientId === ingredientId;
+                    }
                 )?.selectedSubstitution;
 
                 if (substitution) {
@@ -431,11 +452,15 @@ export default function RecipeCustomizer({
                                 <div className="space-y-4">
                                     {scaledIngredients.map((ingredient, index) => {
                                         const substitution = ingredientSubstitutions.find(
-                                            sub => sub.originalIngredient.id === ingredient.id
+                                            sub => {
+                                                const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                                                const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+                                                return subIngredientId === ingredientId;
+                                            }
                                         );
 
                                         return (
-                                            <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                            <div key={ingredient.id || ingredient.name || index} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                                                 <div className="flex justify-between items-start mb-3">
                                                     <div>
                                                         <h4 className="font-medium text-gray-900 dark:text-white">
@@ -471,7 +496,7 @@ export default function RecipeCustomizer({
                                                         {substitution.suggestedSubstitutions.map((sub, subIndex) => (
                                                             <button
                                                                 key={subIndex}
-                                                                onClick={() => applySubstitution(ingredient.id, sub)}
+                                                                onClick={() => applySubstitution((ingredient as any).ingredientId || ingredient.id, sub)}
                                                                 className={cn(
                                                                     'w-full text-left p-3 rounded-lg border transition-colors',
                                                                     substitution.selectedSubstitution?.name === sub.name

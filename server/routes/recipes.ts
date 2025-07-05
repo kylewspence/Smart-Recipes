@@ -183,7 +183,7 @@ router.post('/generate', async (req, res, next) => {
                 // Add to recipe_ingredients
                 await db.query(
                     'INSERT INTO "recipeIngredients" ("recipeId", "ingredientId", "quantity") VALUES ($1, $2, $3)',
-                    [recipeId, ingredientId, ingredient.quantity]
+                    [recipeId, ingredientId, ingredient.quantity || 'to taste']
                 );
             }
 
@@ -199,10 +199,35 @@ router.post('/generate', async (req, res, next) => {
 
             console.log('✅ [ROUTE] Recipe generation completed successfully');
 
-            // Return the complete recipe with its ID
+            // Parse ingredient quantities to add amount and unit fields
+            const processedIngredients = recipe.ingredients.map(ingredient => {
+                const quantityStr = ingredient.quantity || '';
+                const amountMatch = quantityStr.match(/^([0-9]+\.?[0-9]*)/);
+                const amount = amountMatch ? parseFloat(amountMatch[1]) : 1;
+
+                let unit = '';
+                if (quantityStr.match(/^[0-9]+\.?[0-9]*\s+(.+)/)) {
+                    unit = quantityStr.replace(/^[0-9]+\.?[0-9]*\s+/, '').trim();
+                } else if (quantityStr.match(/^[0-9]+\.?[0-9]*(.+)/)) {
+                    unit = quantityStr.replace(/^[0-9]+\.?[0-9]*/, '').trim();
+                }
+
+                return {
+                    ...ingredient,
+                    amount,
+                    unit,
+                    quantity: quantityStr
+                };
+            });
+
+            // Return the complete recipe with its ID in the expected format
             res.status(201).json({
-                recipeId,
-                ...recipe,
+                recipe: {
+                    id: recipeId,
+                    recipeId,
+                    ...recipe,
+                    ingredients: processedIngredients
+                },
                 generatedPrompt
             });
         } catch (openAIError) {
@@ -323,7 +348,19 @@ router.get('/search', async (req, res, next) => {
                            json_build_object(
                                'ingredientId', ri."ingredientId",
                                'name', i."name",
-                               'quantity', ri."quantity"
+                               'quantity', ri."quantity",
+                               'amount', CASE 
+                                   WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*' THEN 
+                                       CAST(SUBSTRING(ri."quantity" FROM '^([0-9]+\.?[0-9]*)') AS FLOAT)
+                                   ELSE 1 
+                               END,
+                               'unit', CASE 
+                                   WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*\s+(.+)' THEN 
+                                       TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*\s+(.+)'))
+                                   WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*(.+)' THEN 
+                                       TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*(.+)'))
+                                   ELSE ''
+                               END
                            )
                        )
                        FROM "recipeIngredients" ri
@@ -398,7 +435,19 @@ router.get('/user/:userId', async (req, res, next) => {
                             json_build_object(
                                 'ingredientId', ri."ingredientId",
                                 'name', i."name",
-                                'quantity', ri."quantity"
+                                'quantity', ri."quantity",
+                                'amount', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*' THEN 
+                                        CAST(SUBSTRING(ri."quantity" FROM '^([0-9]+\.?[0-9]*)') AS FLOAT)
+                                    ELSE 1 
+                                END,
+                                'unit', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*\s+(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*\s+(.+)'))
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*(.+)'))
+                                    ELSE ''
+                                END
                             )
                         )
                         FROM "recipeIngredients" ri
@@ -450,7 +499,19 @@ router.get('/:recipeId', async (req, res, next) => {
                             json_build_object(
                                 'ingredientId', ri."ingredientId",
                                 'name', i."name",
-                                'quantity', ri."quantity"
+                                'quantity', ri."quantity",
+                                'amount', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*' THEN 
+                                        CAST(SUBSTRING(ri."quantity" FROM '^([0-9]+\.?[0-9]*)') AS FLOAT)
+                                    ELSE 1 
+                                END,
+                                'unit', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*\s+(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*\s+(.+)'))
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*(.+)'))
+                                    ELSE ''
+                                END
                             )
                         )
                         FROM "recipeIngredients" ri
@@ -929,6 +990,116 @@ router.post('/:recipeId/favorite', async (req, res, next) => {
                 isFavorite: newFavoriteStatus
             },
             message: `Recipe ${newFavoriteStatus ? 'added to' : 'removed from'} favorites`
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Remove recipe from favorites
+ * DELETE /api/recipes/:recipeId/favorite
+ */
+router.delete('/:recipeId/favorite', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const { userId } = req.body;
+
+        if (!userId || isNaN(parseInt(userId, 10)) || parseInt(userId, 10) <= 0) {
+            throw new ClientError(400, 'Valid user ID is required');
+        }
+
+        // Check if recipe exists and belongs to user
+        const recipeCheck = await db.query(
+            'SELECT "isFavorite" FROM "recipes" WHERE "recipeId" = $1 AND "userId" = $2',
+            [recipeId, userId]
+        );
+
+        if (recipeCheck.rows.length === 0) {
+            throw new ClientError(404, 'Recipe not found or does not belong to user');
+        }
+
+        // Update favorite status to false
+        await db.query(
+            'UPDATE "recipes" SET "isFavorite" = false WHERE "recipeId" = $1',
+            [recipeId]
+        );
+
+        res.json({
+            success: true,
+            data: {
+                recipeId: recipeId,
+                isFavorite: false
+            },
+            message: 'Recipe removed from favorites'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Generate ingredient substitutions
+ * POST /api/recipes/:recipeId/ingredients/:ingredientId/substitutions
+ */
+router.post('/:recipeId/ingredients/:ingredientId/substitutions', async (req, res, next) => {
+    try {
+        const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
+        const ingredientId = parseInt(req.params.ingredientId, 10);
+        const { dietaryRestrictions = [], preferences = [] } = req.body;
+
+        if (isNaN(ingredientId) || ingredientId <= 0) {
+            throw new ClientError(400, 'Valid ingredient ID is required');
+        }
+
+        // Check if recipe and ingredient exist
+        const ingredientCheck = await db.query(
+            `SELECT ri.*, i."name" 
+             FROM "recipeIngredients" ri
+             JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+             WHERE ri."recipeId" = $1 AND ri."ingredientId" = $2`,
+            [recipeId, ingredientId]
+        );
+
+        if (ingredientCheck.rows.length === 0) {
+            throw new ClientError(404, 'Ingredient not found in this recipe');
+        }
+
+        const ingredient = ingredientCheck.rows[0];
+
+        // For now, return mock substitutions
+        // In a real app, this would use AI to generate contextual substitutions
+        const substitutions = [
+            {
+                name: `${ingredient.name} alternative 1`,
+                reason: 'Lower sodium option',
+                ratio: 1.0,
+                difficulty: 'easy'
+            },
+            {
+                name: `${ingredient.name} alternative 2`,
+                reason: 'More accessible ingredient',
+                ratio: 1.2,
+                difficulty: 'easy'
+            },
+            {
+                name: `${ingredient.name} substitute`,
+                reason: 'Dietary restriction friendly',
+                ratio: 0.8,
+                difficulty: 'medium'
+            }
+        ];
+
+        res.json({
+            success: true,
+            data: {
+                originalIngredient: {
+                    id: ingredient.ingredientId,
+                    name: ingredient.name,
+                    quantity: ingredient.quantity
+                },
+                substitutions
+            }
         });
     } catch (err) {
         next(err);
@@ -2692,5 +2863,100 @@ function generatePrintHTML(recipeData: any): string {
 </html>
     `.trim();
 }
+
+/**
+ * Get recipes with optional filtering
+ * GET /api/recipes?userId=1&limit=10&offset=0&cuisine=Italian&difficulty=easy
+ */
+router.get('/', async (req, res, next) => {
+    try {
+        const userId = req.query.userId ? parseInt(req.query.userId as string, 10) : null;
+        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+        const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+        const cuisine = req.query.cuisine as string;
+        const difficulty = req.query.difficulty as string;
+        const isFavorite = req.query.isFavorite === 'true';
+
+        // Build WHERE clause
+        const whereConditions = [];
+        const queryParams = [];
+        let paramIndex = 1;
+
+        if (userId) {
+            whereConditions.push(`r."userId" = $${paramIndex}`);
+            queryParams.push(userId);
+            paramIndex++;
+        }
+
+        if (cuisine) {
+            whereConditions.push(`r."cuisine" = $${paramIndex}`);
+            queryParams.push(cuisine);
+            paramIndex++;
+        }
+
+        if (difficulty) {
+            whereConditions.push(`r."difficulty" = $${paramIndex}`);
+            queryParams.push(difficulty);
+            paramIndex++;
+        }
+
+        if (isFavorite) {
+            whereConditions.push(`r."isFavorite" = true`);
+        }
+
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        // Add limit and offset
+        queryParams.push(limit);
+        queryParams.push(offset);
+
+        const recipesResult = await db.query(
+            `SELECT r.*, 
+                    COALESCE(
+                        (SELECT json_agg(
+                            json_build_object(
+                                'id', ri."ingredientId",
+                                'ingredientId', ri."ingredientId",
+                                'name', i."name",
+                                'quantity', ri."quantity",
+                                'amount', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*' THEN 
+                                        CAST(SUBSTRING(ri."quantity" FROM '^([0-9]+\.?[0-9]*)') AS FLOAT)
+                                    ELSE 1 
+                                END,
+                                'unit', CASE 
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*\s+(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*\s+(.+)'))
+                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*(.+)' THEN 
+                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*(.+)'))
+                                    ELSE ''
+                                END
+                            )
+                        ) 
+                        FROM "recipeIngredients" ri
+                        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                        WHERE ri."recipeId" = r."recipeId"
+                        ), '[]'::json
+                    ) as "ingredients"
+             FROM "recipes" r
+             ${whereClause}
+             ORDER BY r."createdAt" DESC
+             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+            queryParams
+        );
+
+        res.json({
+            success: true,
+            data: recipesResult.rows,
+            pagination: {
+                limit,
+                offset,
+                total: recipesResult.rows.length
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
 
 export default router;

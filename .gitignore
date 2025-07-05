@@ -25,7 +25,8 @@ node_modules/
 *.sw?
 # OS specific
 
+.vercel
+
 # Task files
 # tasks.json
 # tasks/ 
-.vercel

@@ -91,7 +91,16 @@ export default function DashboardPage() {
 
             } catch (error: any) {
                 console.error('❌ Dashboard error loading preferences:', error);
-                // Don't redirect to onboarding automatically - let user stay on dashboard
+
+                // If user has no preferences (404 error), redirect to onboarding
+                // This ensures new users complete their setup before accessing the dashboard
+                if (error.response?.status === 404) {
+                    console.log('🔄 No preferences found, redirecting to onboarding...');
+                    router.push('/onboarding');
+                    return;
+                }
+
+                // For other errors, let user stay on dashboard
                 // They can click "Edit Preferences" if needed
             } finally {
                 setIsLoading(false);
@@ -316,11 +325,11 @@ export default function DashboardPage() {
                             ) : (
                                 <div className="text-center py-4">
                                     <p className="text-gray-600 dark:text-gray-400 mb-4">
-                                        No preferences set yet
+                                        No preferences set yet. Complete your setup to get personalized recommendations!
                                     </p>
-                                    <Link href="/preferences/manage">
+                                    <Link href="/onboarding">
                                         <ShimmerButton>
-                                            Set Up Preferences
+                                            Complete Setup
                                         </ShimmerButton>
                                     </Link>
                                 </div>

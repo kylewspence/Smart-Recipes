@@ -1,0 +1,426 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 11,
+    "failed": 9,
+    "endpoints": 18
+  },
+  "timestamp": "2025-07-05T01:51:04.906Z",
+  "testUser": {
+    "userId": 9,
+    "email": "test-1751680264768@example.com"
+  },
+  "results": [
+    {
+      "endpoint": "/api/auth/register",
+      "method": "POST",
+      "status": 201,
+      "success": true,
+      "details": "User registered successfully",
+      "error": null,
+      "data": "{\"user\":{\"userId\":9,\"email\":\"test-1751680264768@example.com\",\"name\":\"Comprehensive Test User\"},\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjksImVtYWlsIjoidGVzdC0xNzUxNjgwMjY0NzY4QGV4YW1",
+      "timestamp": "2025-07-05T01:51:04.871Z"
+    },
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 429,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "data": "{\"error\":\"Too many authentication attempts\",\"message\":\"Too many login/register attempts. Please try again later.\",\"retryAfter\":\"15 minutes\"}",
+      "timestamp": "2025-07-05T01:51:04.872Z"
+    },
+    {
+      "endpoint": "/api/users/9",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "User data retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"user\":{\"userId\":9,\"email\":\"test-1751680264768@example.com\",\"name\":\"Comprehensive Test User\",\"createdAt\":\"2025-07-05T01:51:04.865Z\",\"updatedAt\":\"2025-07-05T01:51:04.865Z\",\"passwordHash",
+      "timestamp": "2025-07-05T01:51:04.874Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Preferences creation failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint POST /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /",
+      "timestamp": "2025-07-05T01:51:04.875Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Preferences retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.876Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "PUT",
+      "status": 404,
+      "success": false,
+      "details": "Preferences update failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint PUT /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.878Z"
+    },
+    {
+      "endpoint": "/api/recipes/generate",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Recipe generation failed",
+      "error": null,
+      "data": "{\"error\":\"User preferences not found\"}",
+      "timestamp": "2025-07-05T01:51:04.880Z"
+    },
+    {
+      "endpoint": "/api/recipes/user/9",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Retrieved 0 recipes",
+      "error": null,
+      "data": "{\"success\":true,\"data\":[]}",
+      "timestamp": "2025-07-05T01:51:04.886Z"
+    },
+    {
+      "endpoint": "/api/recipes/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Recipe search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.891Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/search/unified?query=chicken not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET",
+      "timestamp": "2025-07-05T01:51:04.892Z"
+    },
+    {
+      "endpoint": "/api/recommendations/9",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Recommendations retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/recommendations/9 not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /api/rate-",
+      "timestamp": "2025-07-05T01:51:04.893Z"
+    },
+    {
+      "endpoint": "/api/ingredients",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Ingredients retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"data\":{\"ingredients\":[{\"ingredientId\":33,\"name\":\"Almond flour\",\"createdAt\":\"2025-07-04T03:26:08.250Z\",\"categoryId\":1,\"nutrition\":null,\"tags\":null,\"aliases\":null,\"seasonality\":null,\"is",
+      "timestamp": "2025-07-05T01:51:04.898Z"
+    },
+    {
+      "endpoint": "/api/ingredients/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Ingredient search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.899Z"
+    },
+    {
+      "endpoint": "/api/database/health",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Database health check passed",
+      "error": null,
+      "data": "{\"success\":true,\"status\":\"healthy\",\"timestamp\":\"2025-07-05T01:51:04.900Z\",\"pool\":{\"totalCount\":2,\"idleCount\":2,\"waitingCount\":0,\"config\":{\"max\":20,\"min\":2,\"idleTimeoutMillis\":30000,\"connectionTimeoutM",
+      "timestamp": "2025-07-05T01:51:04.900Z"
+    },
+    {
+      "endpoint": "/api/database/pool-stats",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Database pool stats retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"data\":{\"totalCount\":2,\"idleCount\":2,\"waitingCount\":0,\"config\":{\"max\":20,\"min\":2,\"idleTimeoutMillis\":30000,\"connectionTimeoutMillis\":2000},\"health\":{\"isHealthy\":true,\"lastHealthCheck\":",
+      "timestamp": "2025-07-05T01:51:04.901Z"
+    },
+    {
+      "endpoint": "/api/security/test",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Security test passed",
+      "error": null,
+      "data": "{\"success\":true,\"securityStatus\":\"PROTECTED\",\"tests\":{\"inputSanitization\":{\"xssProtection\":true,\"sqlInjectionProtection\":true,\"pathTraversalProtection\":true,\"commandInjectionProtection\":true},\"headers",
+      "timestamp": "2025-07-05T01:51:04.902Z"
+    },
+    {
+      "endpoint": "/api/privacy/policy",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Privacy policy retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"policy\":{\"lastUpdated\":\"2024-01-01\",\"version\":\"1.0\",\"dataCollection\":{\"personalData\":[\"Email address\",\"Name\",\"Recipe preferences\",\"Dietary restrictions\",\"Cooking history\"],\"purpose\":[",
+      "timestamp": "2025-07-05T01:51:04.903Z"
+    },
+    {
+      "endpoint": "/api/privacy/cookie-consent",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Cookie consent retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"consent\":{\"essential\":true,\"analytics\":false,\"marketing\":false,\"preferences\":false,\"lastUpdated\":null}}",
+      "timestamp": "2025-07-05T01:51:04.903Z"
+    },
+    {
+      "endpoint": "/api/migrations/status",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Migration status retrieved",
+      "error": null,
+      "data": "{\"success\":true,\"data\":{\"applied\":0,\"pending\":2,\"migrations\":[{\"version\":\"20250623060000_initial_schema\",\"name\":\"Initial Schema Setup\",\"status\":\"pending\"},{\"version\":\"20250624052513_add_notes_and_cook",
+      "timestamp": "2025-07-05T01:51:04.905Z"
+    },
+    {
+      "endpoint": "/api/migrations/validate",
+      "method": "GET",
+      "status": 200,
+      "success": true,
+      "details": "Migration validation passed",
+      "error": null,
+      "data": "{\"success\":true,\"message\":\"All migrations are valid\",\"data\":{\"valid\":true,\"errors\":[]}}",
+      "timestamp": "2025-07-05T01:51:04.906Z"
+    }
+  ],
+  "failedTests": [
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 429,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "data": "{\"error\":\"Too many authentication attempts\",\"message\":\"Too many login/register attempts. Please try again later.\",\"retryAfter\":\"15 minutes\"}",
+      "timestamp": "2025-07-05T01:51:04.872Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Preferences creation failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint POST /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /",
+      "timestamp": "2025-07-05T01:51:04.875Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Preferences retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.876Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "PUT",
+      "status": 404,
+      "success": false,
+      "details": "Preferences update failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint PUT /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.878Z"
+    },
+    {
+      "endpoint": "/api/recipes/generate",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Recipe generation failed",
+      "error": null,
+      "data": "{\"error\":\"User preferences not found\"}",
+      "timestamp": "2025-07-05T01:51:04.880Z"
+    },
+    {
+      "endpoint": "/api/recipes/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Recipe search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.891Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/search/unified?query=chicken not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET",
+      "timestamp": "2025-07-05T01:51:04.892Z"
+    },
+    {
+      "endpoint": "/api/recommendations/9",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Recommendations retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/recommendations/9 not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /api/rate-",
+      "timestamp": "2025-07-05T01:51:04.893Z"
+    },
+    {
+      "endpoint": "/api/ingredients/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Ingredient search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.899Z"
+    }
+  ],
+  "criticalIssues": [
+    {
+      "endpoint": "/api/recipes/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Recipe search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.891Z"
+    },
+    {
+      "endpoint": "/api/ingredients/search",
+      "method": "GET",
+      "status": 500,
+      "success": false,
+      "details": "Ingredient search failed",
+      "error": null,
+      "data": "{\"error\":\"an unexpected error occurred\"}",
+      "timestamp": "2025-07-05T01:51:04.899Z"
+    }
+  ],
+  "clientErrors": [
+    {
+      "endpoint": "/api/auth/me",
+      "method": "GET",
+      "status": 429,
+      "success": false,
+      "details": "Profile retrieval failed",
+      "error": null,
+      "data": "{\"error\":\"Too many authentication attempts\",\"message\":\"Too many login/register attempts. Please try again later.\",\"retryAfter\":\"15 minutes\"}",
+      "timestamp": "2025-07-05T01:51:04.872Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Preferences creation failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint POST /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /",
+      "timestamp": "2025-07-05T01:51:04.875Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Preferences retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.876Z"
+    },
+    {
+      "endpoint": "/api/preferences/9/preferences",
+      "method": "PUT",
+      "status": 404,
+      "success": false,
+      "details": "Preferences update failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint PUT /api/preferences/9/preferences not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /a",
+      "timestamp": "2025-07-05T01:51:04.878Z"
+    },
+    {
+      "endpoint": "/api/recipes/generate",
+      "method": "POST",
+      "status": 404,
+      "success": false,
+      "details": "Recipe generation failed",
+      "error": null,
+      "data": "{\"error\":\"User preferences not found\"}",
+      "timestamp": "2025-07-05T01:51:04.880Z"
+    },
+    {
+      "endpoint": "/api/search/unified",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Unified search failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/search/unified?query=chicken not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET",
+      "timestamp": "2025-07-05T01:51:04.892Z"
+    },
+    {
+      "endpoint": "/api/recommendations/9",
+      "method": "GET",
+      "status": 404,
+      "success": false,
+      "details": "Recommendations retrieval failed",
+      "error": null,
+      "data": "{\"success\":false,\"error\":\"Not Found\",\"message\":\"API endpoint GET /api/recommendations/9 not found\",\"availableEndpoints\":[\"GET /api/health\",\"GET /api/security-status\",\"GET /api/db-test\",\"GET /api/rate-",
+      "timestamp": "2025-07-05T01:51:04.893Z"
+    }
+  ],
+  "networkErrors": [],
+  "workingEndpoints": [
+    "POST /api/auth/register",
+    "GET /api/users/9",
+    "GET /api/recipes/user/9",
+    "GET /api/ingredients",
+    "GET /api/database/health",
+    "GET /api/database/pool-stats",
+    "GET /api/security/test",
+    "GET /api/privacy/policy",
+    "GET /api/privacy/cookie-consent",
+    "GET /api/migrations/status",
+    "GET /api/migrations/validate"
+  ],
+  "brokenEndpoints": [
+    "GET /api/auth/me (429)",
+    "POST /api/preferences/9/preferences (404)",
+    "GET /api/preferences/9/preferences (404)",
+    "PUT /api/preferences/9/preferences (404)",
+    "POST /api/recipes/generate (404)",
+    "GET /api/recipes/search (500)",
+    "GET /api/search/unified (404)",
+    "GET /api/recommendations/9 (404)",
+    "GET /api/ingredients/search (500)"
+  ]
+}

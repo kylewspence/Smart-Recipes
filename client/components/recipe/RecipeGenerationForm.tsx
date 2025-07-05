@@ -21,10 +21,11 @@ import { UserPreferences } from '@/lib/types/preferences';
 interface RecipeGenerationFormProps {
     onRecipeGenerated: (recipe: Recipe) => void;
     onGenerationStart: (formData?: any) => void;
+    onGenerationError?: (error: string) => void;
     className?: string;
 }
 
-export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationStart, className = '' }: RecipeGenerationFormProps) {
+export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationStart, onGenerationError, className = '' }: RecipeGenerationFormProps) {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -182,6 +183,7 @@ export default function RecipeGenerationForm({ onRecipeGenerated, onGenerationSt
             }
 
             setError(`Recipe generation failed: ${errorMessage}`);
+            onGenerationError?.(errorMessage);
         } finally {
             setIsLoading(false);
         }

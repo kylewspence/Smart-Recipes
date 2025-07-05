@@ -1,0 +1,133 @@
+{
+	"meta": {
+		"generatedAt": "2025-07-05T01:58:25.519Z",
+		"tasksAnalyzed": 15,
+		"totalTasks": 15,
+		"analysisCount": 15,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 21,
+			"taskTitle": "Fix API Route Mounting Issues",
+			"complexityScore": 3,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down the process of identifying, importing, and mounting API routes, including error handling and testing steps.",
+			"reasoning": "This task is relatively straightforward, involving standard Express.js route configuration. The complexity is low as the steps are well-defined and the scope is limited."
+		},
+		{
+			"taskId": 22,
+			"taskTitle": "Debug and Fix Database Query Errors",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Detail the steps for optimizing SQL queries, implementing error handling, and setting up database profiling and connection management.",
+			"reasoning": "This task involves complex database operations, query optimization, and performance tuning. It requires a deep understanding of database systems and potential bottlenecks."
+		},
+		{
+			"taskId": 23,
+			"taskTitle": "Implement User Preferences CRUD Operations",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Outline the steps for designing the preferences schema, implementing RESTful endpoints, adding validation, and handling edge cases.",
+			"reasoning": "This task involves standard CRUD operations but requires careful consideration of data validation, error handling, and potential concurrency issues."
+		},
+		{
+			"taskId": 24,
+			"taskTitle": "Complete Recipe Generation Flow",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down the process of integrating with an AI service, handling user preferences, implementing a queuing system, and managing generated recipes.",
+			"reasoning": "This task is complex due to the integration with external AI services, potential scalability issues, and the need for robust error handling and performance optimization."
+		},
+		{
+			"taskId": 25,
+			"taskTitle": "Implement Unified Search Functionality",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Detail the steps for designing and implementing a unified search API, including full-text search, result ranking, and frontend optimizations.",
+			"reasoning": "This task involves complex search algorithms, potential performance challenges with large datasets, and the need to balance relevance and efficiency."
+		},
+		{
+			"taskId": 26,
+			"taskTitle": "Develop Recommendations Engine",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Outline the process of designing and implementing a recommendation algorithm, including data processing, storage, and serving recommendations efficiently.",
+			"reasoning": "This is a highly complex task involving advanced algorithms, machine learning, and potential scalability challenges. It requires careful design and optimization."
+		},
+		{
+			"taskId": 27,
+			"taskTitle": "Implement Advanced Search Filters",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the process of implementing various filter types, updating the search API, and optimizing database queries for filtered searches.",
+			"reasoning": "This task builds on existing search functionality but adds complexity through multiple filter types and potential performance implications."
+		},
+		{
+			"taskId": 28,
+			"taskTitle": "Develop Recipe Management UI",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Detail the steps for creating responsive UI components, implementing state management, and adding features like drag-and-drop and infinite scroll.",
+			"reasoning": "This task involves standard frontend development practices but requires attention to user experience and performance optimization."
+		},
+		{
+			"taskId": 29,
+			"taskTitle": "Create User Preferences UI",
+			"complexityScore": 4,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Outline the process of designing and implementing a multi-step onboarding flow, including form components and state management.",
+			"reasoning": "This task is relatively straightforward, focusing on frontend development with some complexity in managing multi-step forms and user state."
+		},
+		{
+			"taskId": 30,
+			"taskTitle": "Implement Search and Browse UI",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the steps for creating search UI components, implementing filters, and optimizing performance for large result sets.",
+			"reasoning": "This task involves standard frontend development with added complexity in handling dynamic search results and optimizing performance."
+		},
+		{
+			"taskId": 31,
+			"taskTitle": "Implement Social Features",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Detail the steps for implementing user profiles, following system, activity feeds, and social sharing functionality.",
+			"reasoning": "This task introduces significant complexity through real-time updates, privacy concerns, and potential scalability challenges with social interactions."
+		},
+		{
+			"taskId": 32,
+			"taskTitle": "Develop Meal Planning Feature",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Outline the process of implementing a calendar-based meal planning system, including shopping list generation and external calendar integrations.",
+			"reasoning": "This task is complex due to the need for intricate UI interactions, algorithmic challenges in generating shopping lists, and integration with external services."
+		},
+		{
+			"taskId": 33,
+			"taskTitle": "Implement Analytics and Insights",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Break down the steps for implementing a comprehensive analytics system, including data collection, processing, storage, and visualization.",
+			"reasoning": "This is a highly complex task involving big data processing, advanced algorithms for generating insights, and challenges in data visualization and privacy compliance."
+		},
+		{
+			"taskId": 34,
+			"taskTitle": "Optimize Application Performance",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Detail the steps for implementing various performance optimizations, including caching, code splitting, and server-side rendering.",
+			"reasoning": "This task is complex due to the wide range of optimization techniques required and the potential impact on existing functionality. It requires a deep understanding of web performance."
+		},
+		{
+			"taskId": 35,
+			"taskTitle": "Implement Comprehensive Error Handling and Logging",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Outline the process of implementing a centralized error handling system, including logging, monitoring, and user-friendly error displays.",
+			"reasoning": "This task involves moderate complexity in designing a robust error handling system that works across the entire application stack. It requires careful consideration of different error scenarios and logging best practices."
+		}
+	]
+}

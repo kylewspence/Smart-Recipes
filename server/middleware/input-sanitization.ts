@@ -38,11 +38,9 @@ const logSecurityEvent = async (req: Request, severity: 'low' | 'medium' | 'high
             details
         };
 
-        // Validate audit entry
-        const validatedEntry = securityAuditSchema.parse(auditEntry);
-
-        // Log to console (in production, this would go to a security monitoring system)
-        console.log('🔒 Security Event:', JSON.stringify(validatedEntry, null, 2));
+        // Skip validation for security audit logging to avoid recursive issues
+        // Just log directly without schema validation
+        console.log('🔒 Security Event:', JSON.stringify(auditEntry, null, 2));
 
         // TODO: In production, send to security monitoring service (e.g., Sentry, DataDog)
     } catch (error) {

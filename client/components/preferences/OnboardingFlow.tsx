@@ -22,6 +22,7 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
 
     const [currentStep, setCurrentStep] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // Form data state
@@ -34,6 +35,40 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
         servingSize: 4,
         ingredientPreferences: []
     });
+
+    // Load existing preferences on mount
+    useEffect(() => {
+        const loadExistingPreferences = async () => {
+            if (!user?.userId) {
+                setIsLoadingPreferences(false);
+                return;
+            }
+
+            try {
+                console.log('🔄 OnboardingFlow: Loading existing preferences for user:', user.userId);
+                const existingPrefs = await preferencesService.getUserPreferences(user.userId.toString());
+                console.log('✅ OnboardingFlow: Loaded existing preferences:', existingPrefs);
+
+                // Pre-populate form with existing preferences
+                setFormData({
+                    dietaryRestrictions: existingPrefs.dietaryRestrictions || [],
+                    allergies: existingPrefs.allergies || [],
+                    cuisinePreferences: existingPrefs.cuisinePreferences || [],
+                    spiceLevel: existingPrefs.spiceLevel || 'medium',
+                    maxCookingTime: existingPrefs.maxCookingTime || 60,
+                    servingSize: existingPrefs.servingSize || 4,
+                    ingredientPreferences: existingPrefs.ingredientPreferences || []
+                });
+            } catch (error) {
+                console.log('ℹ️ OnboardingFlow: No existing preferences found, using defaults');
+                // Keep default values if no preferences exist
+            } finally {
+                setIsLoadingPreferences(false);
+            }
+        };
+
+        loadExistingPreferences();
+    }, [user?.userId]);
 
     // Define onboarding steps
     const steps: OnboardingStep[] = [
@@ -153,16 +188,30 @@ export default function OnboardingFlow({ onComplete, className = '' }: Onboardin
         }
     };
 
+    // Show loading state while preferences are being loaded
+    if (isLoadingPreferences) {
+        return (
+            <div className={`min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 ${className}`}>
+                <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600 dark:text-gray-400">Loading your preferences...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 ${className}`}>
             <div className="container mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Welcome to Smart Recipes!
+                        Set Up Your Preferences
                     </h1>
                     <p className="text-lg text-gray-600 dark:text-gray-400">
-                        Let's personalize your cooking experience
+                        Let's personalize your cooking experience with a guided setup
                     </p>
                 </div>
 

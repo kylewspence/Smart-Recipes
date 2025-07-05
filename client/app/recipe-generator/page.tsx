@@ -32,6 +32,12 @@ export default function RecipeGeneratorPage() {
         }
     };
 
+    const handleGenerationError = (error: string) => {
+        setIsGenerating(false);
+        setGenerationStartTime(null);
+        console.error('Recipe generation error:', error);
+    };
+
     const handleCancelGeneration = () => {
         setIsGenerating(false);
         setGenerationStartTime(null);
@@ -75,6 +81,7 @@ export default function RecipeGeneratorPage() {
                                 <RecipeGenerationForm
                                     onRecipeGenerated={handleRecipeGenerated}
                                     onGenerationStart={handleGenerationStart}
+                                    onGenerationError={handleGenerationError}
                                     className="h-fit"
                                 />
                             </motion.div>

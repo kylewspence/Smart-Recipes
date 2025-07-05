@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import {
     AuthState,
     AuthContextType,
@@ -14,7 +14,8 @@ import {
     getStoredToken,
     getStoredRefreshToken,
     isTokenExpired,
-    clearStoredAuth
+    clearStoredAuth,
+    storeAuthTokens
 } from '../services/auth';
 
 // Initial authentication state
@@ -47,12 +48,17 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
             };
 
         case 'AUTH_SUCCESS':
+            // Store tokens in localStorage for API requests
+            if (action.payload.tokens) {
+                storeAuthTokens(action.payload.tokens);
+            }
+
             return {
                 ...state,
                 user: action.payload.user,
                 tokens: action.payload.tokens,
-                isAuthenticated: true,
                 isLoading: false,
+                isAuthenticated: true,
                 error: null,
             };
 

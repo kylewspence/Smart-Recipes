@@ -100,11 +100,12 @@ export function RegisterForm({ onSuccess, redirectTo }: RegisterFormProps) {
             await registerUser(data as RegisterData);
             onSuccess?.();
 
-            // Redirect if specified, otherwise go to dashboard
+            // Redirect new users to onboarding flow instead of dashboard
+            // This ensures they set up their preferences before accessing the app
             if (redirectTo) {
                 window.location.href = redirectTo;
             } else {
-                router.push('/dashboard');
+                router.push('/onboarding');
             }
         } catch (err: any) {
             // Handle specific error cases
