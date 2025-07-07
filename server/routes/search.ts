@@ -77,9 +77,12 @@ async function logSearchAnalytics(query: string, userId: number | null, resultCo
  */
 router.get('/', async (req, res, next) => {
     try {
-        const { q, cuisine, maxCookingTime, ingredients, excludeIngredients } = req.query;
+        const { q, query, cuisine, maxCookingTime, ingredients, excludeIngredients } = req.query;
 
-        if (!q && !ingredients) {
+        // Accept both 'q' and 'query' parameters for backward compatibility
+        const searchTerm = q || query;
+
+        if (!searchTerm && !ingredients) {
             return res.json([]);
         }
 
@@ -88,9 +91,9 @@ router.get('/', async (req, res, next) => {
         let paramIndex = 1;
 
         // Simple text search in title and description
-        if (q) {
+        if (searchTerm) {
             whereConditions.push(`(r."title" ILIKE $${paramIndex} OR r."description" ILIKE $${paramIndex})`);
-            queryParams.push(`%${q}%`);
+            queryParams.push(`%${searchTerm}%`);
             paramIndex++;
         }
 

@@ -538,65 +538,9 @@ router.get('/:recipeId', async (req, res, next) => {
     try {
         const { recipeId } = recipeIdSchema.parse({ recipeId: req.params.recipeId });
 
+        // Get basic recipe data first
         const recipeResult = await db.query(
-            `SELECT r.*, 
-                    COALESCE(
-                        (SELECT json_agg(
-                            json_build_object(
-                                'ingredientId', ri."ingredientId",
-                                'name', i."name",
-                                'quantity', ri."quantity",
-                                'amount', CASE 
-                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*' THEN 
-                                        CAST(SUBSTRING(ri."quantity" FROM '^([0-9]+\.?[0-9]*)') AS FLOAT)
-                                    ELSE 1 
-                                END,
-                                'unit', CASE 
-                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*\s+(.+)' THEN 
-                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*\s+(.+)'))
-                                    WHEN ri."quantity" ~ '^[0-9]+\.?[0-9]*(.+)' THEN 
-                                        TRIM(SUBSTRING(ri."quantity" FROM '^[0-9]+\.?[0-9]*(.+)'))
-                                    ELSE ''
-                                END
-                            )
-                        )
-                        FROM "recipeIngredients" ri
-                        JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
-                        WHERE ri."recipeId" = r."recipeId"
-                        ), '[]'::json) as ingredients,
-                    COALESCE(
-                        (SELECT json_agg(rt."tag")
-                        FROM "recipeTags" rt
-                        WHERE rt."recipeId" = r."recipeId"
-                        ), '[]'::json) as tags,
-                    COALESCE(
-                        (SELECT ROUND(AVG(rr."rating"), 2)
-                        FROM "recipeRatings" rr
-                        WHERE rr."recipeId" = r."recipeId"
-                        ), 0) as avgRating,
-                    COALESCE(
-                        (SELECT COUNT(*)
-                        FROM "recipeRatings" rr
-                        WHERE rr."recipeId" = r."recipeId"
-                        ), 0) as ratingCount,
-                    COALESCE(
-                        (SELECT json_agg(
-                            json_build_object(
-                                'id', rr."id",
-                                'userId', rr."userId",
-                                'rating', rr."rating",
-                                'review', rr."review",
-                                'createdAt', rr."createdAt",
-                                'userName', u."name"
-                            )
-                        )
-                        FROM "recipeRatings" rr
-                        JOIN "users" u ON rr."userId" = u."userId"
-                        WHERE rr."recipeId" = r."recipeId"
-                        ORDER BY rr."createdAt" DESC
-                        ), '[]'::json) as ratings
-            FROM "recipes" r
-            WHERE r."recipeId" = $1`,
+            'SELECT * FROM "recipes" WHERE "recipeId" = $1',
             [recipeId]
         );
 
@@ -604,10 +548,104 @@ router.get('/:recipeId', async (req, res, next) => {
             throw new ClientError(404, 'Recipe not found');
         }
 
-        res.json({
-            success: true,
-            data: recipeResult.rows[0]
-        });
+        const recipe = recipeResult.rows[0];
+
+        // Get ingredients for this recipe
+        try {
+            const ingredientsResult = await db.query(
+                `SELECT 
+                    ri."quantity",
+                    i."ingredientId" as id,
+                    i."ingredientId",
+                    i."name",
+                    i."categoryId"
+                 FROM "recipeIngredients" ri
+                 JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                 WHERE ri."recipeId" = $1`,
+                [recipe.recipeId]
+            );
+
+            // Parse ingredients to match expected format
+            const ingredients = ingredientsResult.rows.map(ing => {
+                // Parse quantity string like "2 cups" into amount and unit
+                const quantity = ing.quantity || '';
+                const quantityMatch = quantity.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+
+                return {
+                    id: ing.id,
+                    ingredientId: ing.ingredientId,
+                    name: ing.name,
+                    amount: quantityMatch ? parseFloat(quantityMatch[1]) : 1,
+                    unit: quantityMatch ? quantityMatch[2].trim() : '',
+                    categoryId: ing.categoryId
+                };
+            });
+
+            // Get rating data
+            const ratingStatsResult = await db.query(
+                `SELECT 
+                    COALESCE(ROUND(AVG("rating"), 2), 0) as avg_rating,
+                    COUNT(*) as rating_count
+                 FROM "recipeRatings" 
+                 WHERE "recipeId" = $1`,
+                [recipe.recipeId]
+            );
+
+            const ratingStats = ratingStatsResult.rows[0];
+
+            // Get current user's rating if user ID is provided
+            let userRating = 0;
+            const userId = req.query.userId ? parseInt(req.query.userId as string, 10) : null;
+
+            if (userId && !isNaN(userId)) {
+                try {
+                    const userRatingResult = await db.query(
+                        'SELECT "rating" FROM "recipeRatings" WHERE "recipeId" = $1 AND "userId" = $2',
+                        [recipe.recipeId, userId]
+                    );
+
+                    if (userRatingResult.rows.length > 0) {
+                        userRating = userRatingResult.rows[0].rating;
+                    }
+                } catch (authError) {
+                    // If there's an error, just continue without user rating
+                    console.log('Error getting user rating:', authError);
+                }
+            }
+
+            const recipeWithIngredients = {
+                ...recipe,
+                id: recipe.recipeId,
+                ingredients,
+                tags: [],
+                avgRating: parseFloat(ratingStats.avg_rating) || 0,
+                reviewCount: parseInt(ratingStats.rating_count) || 0,
+                rating: userRating, // Current user's rating
+                ratings: []
+            };
+
+            res.json({
+                success: true,
+                data: recipeWithIngredients
+            });
+        } catch (error) {
+            console.error(`Error getting ingredients for recipe ${recipe.recipeId}:`, error);
+            // Fallback to empty ingredients if there's an error
+            const recipeWithDefaults = {
+                ...recipe,
+                id: recipe.recipeId,
+                ingredients: [],
+                tags: [],
+                avgRating: 0,
+                reviewCount: 0,
+                rating: 0,
+                ratings: []
+            };
+            res.json({
+                success: true,
+                data: recipeWithDefaults
+            });
+        }
     } catch (err) {
         next(err);
     }
@@ -1182,16 +1220,33 @@ router.get('/user/:userId/favorites', async (req, res, next) => {
                         (SELECT json_agg(rt."tag")
                         FROM "recipeTags" rt
                         WHERE rt."recipeId" = r."recipeId"
-                        ), '[]'::json) as tags
+                        ), '[]'::json) as tags,
+                    COALESCE(
+                        (SELECT ROUND(AVG(rr."rating"), 2)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as rating,
+                    COALESCE(
+                        (SELECT COUNT(*)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as "reviewCount"
             FROM "recipes" r
             WHERE r."userId" = $1 AND r."isFavorite" = true
             ORDER BY r."createdAt" DESC`,
             [userId]
         );
 
+        // Convert rating and reviewCount to numbers
+        const processedData = favoritesResult.rows.map(recipe => ({
+            ...recipe,
+            rating: recipe.rating ? parseFloat(recipe.rating) : 0,
+            reviewCount: recipe.reviewCount ? parseInt(recipe.reviewCount) : 0
+        }));
+
         res.json({
             success: true,
-            data: favoritesResult.rows
+            data: processedData
         });
     } catch (err) {
         next(err);
@@ -1423,6 +1478,16 @@ router.get('/user/:userId/saved', async (req, res, next) => {
                         FROM "recipeTags" rt
                         WHERE rt."recipeId" = r."recipeId"
                         ), '[]'::json) as tags,
+                    COALESCE(
+                        (SELECT ROUND(AVG(rr."rating"), 2)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as rating,
+                    COALESCE(
+                        (SELECT COUNT(*)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as "reviewCount",
                     sr."savedAt"
             FROM "savedRecipes" sr
             JOIN "recipes" r ON sr."recipeId" = r."recipeId"
@@ -1431,9 +1496,16 @@ router.get('/user/:userId/saved', async (req, res, next) => {
             [userId]
         );
 
+        // Convert rating and reviewCount to numbers
+        const processedData = savedRecipesResult.rows.map(recipe => ({
+            ...recipe,
+            rating: recipe.rating ? parseFloat(recipe.rating) : 0,
+            reviewCount: recipe.reviewCount ? parseInt(recipe.reviewCount) : 0
+        }));
+
         res.json({
             success: true,
-            data: savedRecipesResult.rows
+            data: processedData
         });
     } catch (err) {
         next(err);
@@ -2956,8 +3028,19 @@ router.get('/', async (req, res, next) => {
         queryParams.push(limit);
         queryParams.push(offset);
 
+        // Get recipes with their ingredients and ratings
         const recipesResult = await db.query(
-            `SELECT r.*
+            `SELECT r.*, 
+                    COALESCE(
+                        (SELECT ROUND(AVG(rr."rating"), 2)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as rating,
+                    COALESCE(
+                        (SELECT COUNT(*)
+                        FROM "recipeRatings" rr
+                        WHERE rr."recipeId" = r."recipeId"
+                        ), 0) as "reviewCount"
              FROM "recipes" r
              ${whereClause}
              ORDER BY r."createdAt" DESC
@@ -2965,7 +3048,60 @@ router.get('/', async (req, res, next) => {
             queryParams
         );
 
-        res.json(recipesResult.rows);
+        // Get ingredients for each recipe
+        const recipesWithIngredients = await Promise.all(
+            recipesResult.rows.map(async (recipe) => {
+                try {
+                    const ingredientsResult = await db.query(
+                        `SELECT 
+                            ri."quantity",
+                            i."ingredientId" as id,
+                            i."ingredientId",
+                            i."name",
+                            i."categoryId"
+                         FROM "recipeIngredients" ri
+                         JOIN "ingredients" i ON ri."ingredientId" = i."ingredientId"
+                         WHERE ri."recipeId" = $1`,
+                        [recipe.recipeId]
+                    );
+
+                    // Parse ingredients to match expected format
+                    const ingredients = ingredientsResult.rows.map(ing => {
+                        // Parse quantity string like "2 cups" into amount and unit
+                        const quantity = ing.quantity || '';
+                        const quantityMatch = quantity.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+
+                        return {
+                            id: ing.id,
+                            ingredientId: ing.ingredientId,
+                            name: ing.name,
+                            amount: quantityMatch ? parseFloat(quantityMatch[1]) : 1,
+                            unit: quantityMatch ? quantityMatch[2].trim() : '',
+                            categoryId: ing.categoryId
+                        };
+                    });
+
+                    return {
+                        ...recipe,
+                        id: recipe.recipeId,
+                        rating: recipe.rating ? parseFloat(recipe.rating) : 0,
+                        reviewCount: recipe.reviewCount ? parseInt(recipe.reviewCount, 10) : 0,
+                        ingredients
+                    };
+                } catch (error) {
+                    console.error(`Error getting ingredients for recipe ${recipe.recipeId}:`, error);
+                    return {
+                        ...recipe,
+                        id: recipe.recipeId,
+                        rating: recipe.rating ? parseFloat(recipe.rating) : 0,
+                        reviewCount: recipe.reviewCount ? parseInt(recipe.reviewCount, 10) : 0,
+                        ingredients: []
+                    };
+                }
+            })
+        );
+
+        res.json(recipesWithIngredients);
     } catch (err) {
         next(err);
     }

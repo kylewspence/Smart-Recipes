@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Zap } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { LoginCredentials } from '@/lib/types/auth';
 
@@ -40,6 +40,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         handleSubmit,
         formState: { errors, isSubmitting },
         setError,
+        setValue,
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -109,7 +110,38 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
         }
     };
 
+    // Development instant login function
+    const handleInstantLogin = async () => {
+        try {
+            // Fill form with test credentials
+            setValue('email', 'dev@test.com');
+            setValue('password', 'DevTest123!');
+
+            // Login with test credentials
+            await login({
+                email: 'dev@test.com',
+                password: 'DevTest123!',
+            } as LoginCredentials);
+
+            onSuccess?.();
+
+            // Redirect to dashboard
+            if (redirectTo) {
+                window.location.href = redirectTo;
+            } else {
+                window.location.href = '/dashboard';
+            }
+        } catch (err: unknown) {
+            const errorObj = err as { status?: number; message?: string };
+            setError('root', {
+                type: 'manual',
+                message: errorObj.message || 'Instant login failed. Please try again.',
+            });
+        }
+    };
+
     const isFormLoading = isLoading || isSubmitting;
+    const isDevelopment = process.env.NODE_ENV === 'development';
 
     return (
         <div className="w-full max-w-md mx-auto">
@@ -313,6 +345,36 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                             </>
                         )}
                     </button>
+
+                    {/* Development Instant Login Button */}
+                    {isDevelopment && (
+                        <button
+                            type="button"
+                            onClick={handleInstantLogin}
+                            disabled={isFormLoading}
+                            className={`
+                w-full flex justify-center items-center py-3 px-4 border-2 border-yellow-400 dark:border-yellow-500
+                rounded-xl text-sm font-medium text-yellow-700 dark:text-yellow-400 transition-all duration-200 ease-in-out
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500
+                ${isFormLoading
+                                    ? 'bg-yellow-50 dark:bg-yellow-900/20 cursor-not-allowed'
+                                    : 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transform hover:scale-[1.02] active:scale-[0.98]'
+                                }
+              `}
+                        >
+                            {isFormLoading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-400 mr-2"></div>
+                                    Loading...
+                                </>
+                            ) : (
+                                <>
+                                    <Zap className="w-5 h-5 mr-2" />
+                                    ⚡ Instant Login (Dev)
+                                </>
+                            )}
+                        </button>
+                    )}
                 </form>
 
                 {/* Footer */}

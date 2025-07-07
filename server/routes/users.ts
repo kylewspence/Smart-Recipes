@@ -5,6 +5,24 @@ import db from '../db/db';
 
 const router = express.Router();
 
+// GET /api/users - Get all users
+router.get('/', async (req, res, next) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+        const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
+        const result = await db.query(
+            'SELECT "userId", email, name, "createdAt", "updatedAt" FROM users ORDER BY "createdAt" DESC LIMIT $1 OFFSET $2',
+            [limit, offset]
+        );
+
+        // Return array directly to match test expectations
+        res.json(result.rows);
+    } catch (error) {
+        next(error);
+    }
+});
+
 router.post('/', validate(createUserSchema), async (req, res, next) => {
     try {
         const { email, name } = req.body;

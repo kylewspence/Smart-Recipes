@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { recipeService, RecipeCollection } from '@/lib/services/recipe';
-import { Recipe } from '@/lib/types/recipe';
+import { recipeService } from '@/lib/services/recipe';
+import { Recipe, RecipeCollection } from '@/lib/types/recipe';
 import RecipeDisplay from '@/components/recipe/RecipeDisplay';
 import CollectionsManager from '@/components/recipe/CollectionsManager';
 import AdvancedRecipeFilters, { FilterOptions } from '@/components/recipe/AdvancedRecipeFilters';
@@ -190,18 +190,24 @@ export default function SavedRecipesPage() {
     const loadRecipes = async () => {
         if (!user) return;
 
+        console.log('Loading recipes for user:', user.userId, 'activeTab:', activeTab);
         setIsLoading(true);
         setError(null);
 
         try {
             if (activeTab === 'saved') {
+                console.log('Fetching saved recipes...');
                 const recipes = await recipeService.getSavedRecipes(user.userId);
+                console.log('Saved recipes received:', recipes.length, 'recipes');
                 setSavedRecipes(recipes);
             } else if (activeTab === 'favorites') {
+                console.log('Fetching favorite recipes...');
                 const recipes = await recipeService.getFavoriteRecipes(user.userId);
+                console.log('Favorite recipes received:', recipes.length, 'recipes');
                 setFavoriteRecipes(recipes);
             }
         } catch (error: any) {
+            console.error('Error loading recipes:', error);
             setError('Failed to load recipes');
             console.error('Failed to load recipes:', error);
         } finally {

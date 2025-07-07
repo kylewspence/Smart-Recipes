@@ -13,13 +13,29 @@ export interface Recipe {
     mealType: string;
     tags: string[];
     nutritionalInfo?: NutritionalInfo;
-    rating?: number;
+    rating?: number; // User's individual rating
+    avgRating?: number; // Average rating across all users
     reviewCount?: number;
     imageUrl?: string;
     userId: number;
     generatedPrompt?: string;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface SavedRecipe extends Recipe {
+    savedAt: string;
+}
+
+export interface RecipeCollection {
+    collectionId: number;
+    name: string;
+    description?: string;
+    userId: number;
+    isPublic?: boolean;
+    createdAt: string;
+    updatedAt: string;
+    recipeCount?: number;
 }
 
 export interface RecipeIngredient {

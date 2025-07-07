@@ -72,36 +72,69 @@ router.post('/:userId/preferences', validateParamsAndBody(userIdSchema, userPref
 
         // Check if preferences already exist
         const existingResult = await db.query(
-            'SELECT 1 FROM "userPreferences" WHERE "userId" = $1',
+            'SELECT * FROM "userPreferences" WHERE "userId" = $1',
             [userId]
         );
 
+        let result;
         if (existingResult.rows.length > 0) {
-            throw new ClientError(409, 'User preferences already exist. Use PUT to update.');
-        }
+            // Update existing preferences (upsert behavior for backward compatibility)
+            const updates = [];
+            const values = [];
+            let paramIndex = 1;
 
-        // Create new preferences
-        const result = await db.query(
-            `INSERT INTO "userPreferences" (
-                "userId", 
-                "dietaryRestrictions", 
-                "allergies", 
-                "cuisinePreferences", 
-                "spiceLevel", 
-                "maxCookingTime", 
-                "servingSize"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *`,
-            [
-                userId,
-                preferences.dietaryRestrictions || [],
-                preferences.allergies || [],
-                preferences.cuisinePreferences || [],
-                preferences.spiceLevel || 'medium',
-                preferences.maxCookingTime || 60,
-                preferences.servingSize || 4
-            ]
-        );
+            const fields = [
+                'dietaryRestrictions',
+                'allergies',
+                'cuisinePreferences',
+                'spiceLevel',
+                'maxCookingTime',
+                'servingSize'
+            ];
+
+            fields.forEach(field => {
+                if (preferences[field] !== undefined) {
+                    updates.push(`"${field}" = $${paramIndex}`);
+                    values.push(preferences[field]);
+                    paramIndex++;
+                }
+            });
+
+            // Always update the updatedAt field
+            updates.push(`"updatedAt" = NOW()`);
+            values.push(userId);
+
+            result = await db.query(
+                `UPDATE "userPreferences" 
+                 SET ${updates.join(', ')} 
+                 WHERE "userId" = $${paramIndex} 
+                 RETURNING *`,
+                values
+            );
+        } else {
+            // Create new preferences
+            result = await db.query(
+                `INSERT INTO "userPreferences" (
+                    "userId", 
+                    "dietaryRestrictions", 
+                    "allergies", 
+                    "cuisinePreferences", 
+                    "spiceLevel", 
+                    "maxCookingTime", 
+                    "servingSize"
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *`,
+                [
+                    userId,
+                    preferences.dietaryRestrictions || [],
+                    preferences.allergies || [],
+                    preferences.cuisinePreferences || [],
+                    preferences.spiceLevel || 'medium',
+                    preferences.maxCookingTime || 60,
+                    preferences.servingSize || 4
+                ]
+            );
+        }
 
         res.status(201).json({
             success: true,

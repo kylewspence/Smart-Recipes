@@ -172,16 +172,16 @@ export default function RecipeCustomizer({
             ]);
         } catch (error) {
             console.error('Failed to generate substitutions:', error);
-            // Fallback to mock data if API fails
+            // Fallback to mock data if API fails - create unique substitutions for each ingredient
             const mockSubstitutions = [
                 {
-                    name: `${ingredient.name} alternative 1`,
+                    name: `Substitute for ${ingredient.name} (Option 1)`,
                     reason: 'Lower sodium option',
                     ratio: 1.0,
                     difficulty: 'easy' as const
                 },
                 {
-                    name: `${ingredient.name} alternative 2`,
+                    name: `Substitute for ${ingredient.name} (Option 2)`,
                     reason: 'More accessible ingredient',
                     ratio: 1.2,
                     difficulty: 'easy' as const
@@ -245,15 +245,19 @@ export default function RecipeCustomizer({
 
     // Apply substitution to ingredient
     const applySubstitution = (originalIngredientId: number, substitution: any) => {
-        setIngredientSubstitutions(prev =>
-            prev.map(sub => {
+        console.log('Applying substitution for ingredient ID:', originalIngredientId, 'substitution:', substitution);
+        setIngredientSubstitutions(prev => {
+            const updated = prev.map(sub => {
                 // Check both id and ingredientId for compatibility
                 const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
+                console.log('Checking substitution for ingredient:', subIngredientId, 'against:', originalIngredientId);
                 return subIngredientId === originalIngredientId
                     ? { ...sub, selectedSubstitution: substitution }
                     : sub;
-            })
-        );
+            });
+            console.log('Updated substitutions:', updated);
+            return updated;
+        });
     };
 
     // Save customized recipe
@@ -451,21 +455,31 @@ export default function RecipeCustomizer({
 
                                 <div className="space-y-4">
                                     {scaledIngredients.map((ingredient, index) => {
+                                        // Create a unique key using multiple identifiers
+                                        const uniqueIngredientId = (ingredient as any).ingredientId || ingredient.id || `${ingredient.name}-${index}`;
+
                                         const substitution = ingredientSubstitutions.find(
                                             sub => {
                                                 const subIngredientId = sub.originalIngredient.id || (sub.originalIngredient as any).ingredientId;
                                                 const ingredientId = (ingredient as any).ingredientId || ingredient.id;
+
+                                                // Debug logging
+                                                console.log(`Checking substitution match: subIngredientId=${subIngredientId}, ingredientId=${ingredientId}, ingredient=${ingredient.name}`);
+
                                                 return subIngredientId === ingredientId;
                                             }
                                         );
 
                                         return (
-                                            <div key={ingredient.id || ingredient.name || index} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                            <div key={`ingredient-substitution-${uniqueIngredientId}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                                                 <div className="flex justify-between items-start mb-3">
                                                     <div>
                                                         <h4 className="font-medium text-gray-900 dark:text-white">
                                                             {ingredient.amount} {ingredient.unit} {ingredient.name}
                                                         </h4>
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            ID: {(ingredient as any).ingredientId || ingredient.id || 'none'} | Index: {index}
+                                                        </div>
                                                         {ingredient.preparation && (
                                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                                 {ingredient.preparation}
@@ -488,14 +502,17 @@ export default function RecipeCustomizer({
                                                     </Button>
                                                 </div>
 
-                                                {substitution && (
+                                                {substitution && substitution.suggestedSubstitutions && substitution.suggestedSubstitutions.length > 0 && (
                                                     <div className="space-y-2">
                                                         <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                            Suggested Substitutions:
+                                                            Suggested Substitutions for {ingredient.name}:
                                                         </h5>
+                                                        <div className="text-xs text-gray-500 mb-2">
+                                                            Found {substitution.suggestedSubstitutions.length} substitution(s) for ingredient ID: {uniqueIngredientId}
+                                                        </div>
                                                         {substitution.suggestedSubstitutions.map((sub, subIndex) => (
                                                             <button
-                                                                key={subIndex}
+                                                                key={`substitution-${uniqueIngredientId}-${subIndex}-${sub.name}`}
                                                                 onClick={() => applySubstitution((ingredient as any).ingredientId || ingredient.id, sub)}
                                                                 className={cn(
                                                                     'w-full text-left p-3 rounded-lg border transition-colors',
@@ -512,6 +529,9 @@ export default function RecipeCustomizer({
                                                                         <p className="text-sm text-gray-600 dark:text-gray-400">
                                                                             {sub.reason}
                                                                         </p>
+                                                                        <div className="text-xs text-gray-500 mt-1">
+                                                                            Ratio: {sub.ratio} | Difficulty: {sub.difficulty}
+                                                                        </div>
                                                                     </div>
                                                                     {substitution.selectedSubstitution?.name === sub.name && (
                                                                         <CheckCircle2 className="w-5 h-5 text-orange-500" />
@@ -519,6 +539,12 @@ export default function RecipeCustomizer({
                                                                 </div>
                                                             </button>
                                                         ))}
+                                                    </div>
+                                                )}
+
+                                                {!substitution && (
+                                                    <div className="text-sm text-gray-500 mt-2">
+                                                        No substitutions generated yet. Click "Get Substitutions" above.
                                                     </div>
                                                 )}
                                             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Recipe } from '@/lib/types';
+import { Recipe } from '@/lib/types/recipe';
 
 // Offline storage keys
 const STORAGE_KEYS = {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { RecipeGenerationRequest, RecipeGenerationResponse, Recipe, RecipeIngredient } from '../types/recipe';
+import { Recipe, RecipeIngredient, RecipeGenerationRequest, RecipeGenerationResponse, SavedRecipe, RecipeCollection } from '@/lib/types/recipe';
 import { offlineService } from './offline';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -41,24 +41,10 @@ interface ScalingResponse {
 }
 
 // Types for collections
-export interface RecipeCollection {
-    collectionId: number;
-    name: string;
-    description?: string;
-    isPublic: boolean;
-    recipeCount: number;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export interface CreateCollectionRequest {
     name: string;
     description?: string;
     isPublic?: boolean;
-}
-
-export interface SavedRecipe extends Recipe {
-    savedAt: string;
 }
 
 // Notes and Cooking History Types
@@ -193,11 +179,26 @@ class RecipeService {
 
             // If online, try to fetch fresh data but fallback to cache
             try {
-                const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
+                // Get user ID from localStorage to include user-specific data like ratings
+                let url = `${API_BASE_URL}/api/recipes/${id}`;
+                const userData = localStorage.getItem('user_data');
+                if (userData) {
+                    try {
+                        const user = JSON.parse(userData);
+                        if (user.userId) {
+                            url += `?userId=${user.userId}`;
+                        }
+                    } catch (e) {
+                        // If parsing fails, continue without userId
+                    }
+                }
+
+                const response = await fetch(url, {
                     headers: this.getAuthHeaders(),
                 });
 
-                const recipe = await this.handleResponse<Recipe>(response);
+                const result = await this.handleResponse<{ success: boolean; data: Recipe }>(response);
+                const recipe = result.data;
                 await offlineService.cacheRecipe(recipe);
                 return recipe;
             } catch (error) {
@@ -212,11 +213,26 @@ class RecipeService {
         }
 
         // Fetch from server
-        const response = await fetch(`${API_BASE_URL}/api/recipes/${id}`, {
+        // Get user ID from localStorage to include user-specific data like ratings
+        let url = `${API_BASE_URL}/api/recipes/${id}`;
+        const userData = localStorage.getItem('user_data');
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                if (user.userId) {
+                    url += `?userId=${user.userId}`;
+                }
+            } catch (e) {
+                // If parsing fails, continue without userId
+            }
+        }
+
+        const response = await fetch(url, {
             headers: this.getAuthHeaders(),
         });
 
-        const recipe = await this.handleResponse<Recipe>(response);
+        const result = await this.handleResponse<{ success: boolean; data: Recipe }>(response);
+        const recipe = result.data;
         await offlineService.cacheRecipe(recipe);
         return recipe;
     }
@@ -340,7 +356,7 @@ class RecipeService {
         }
     }
 
-    async getFavoriteRecipes(): Promise<Recipe[]> {
+    async getFavoriteRecipes(userId?: number): Promise<Recipe[]> {
         const networkStatus = offlineService.getNetworkStatus();
 
         if (!networkStatus.isOnline) {
@@ -348,7 +364,7 @@ class RecipeService {
             const cachedRecipes = offlineService.getCachedRecipes();
             return cachedRecipes.filter(recipe =>
                 offlineService.isOfflineFavorite(recipe.id.toString())
-            );
+            ) as Recipe[];
         }
 
         try {
@@ -370,7 +386,47 @@ class RecipeService {
             const cachedRecipes = offlineService.getCachedRecipes();
             return cachedRecipes.filter(recipe =>
                 offlineService.isOfflineFavorite(recipe.id.toString())
-            );
+            ) as Recipe[];
+        }
+    }
+
+    async getSavedRecipes(userId: number): Promise<SavedRecipe[]> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            // Return cached recipes that are marked as saved offline
+            const cachedRecipes = offlineService.getCachedRecipes();
+            return cachedRecipes
+                .filter(recipe => offlineService.isOfflineFavorite(recipe.id.toString()))
+                .map(recipe => ({
+                    ...recipe,
+                    savedAt: new Date(recipe.cachedAt).toISOString()
+                } as SavedRecipe));
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/user/${userId}/saved`, {
+                headers: this.getAuthHeaders(),
+            });
+
+            const result = await this.handleResponse<{ success: boolean; data: SavedRecipe[] }>(response);
+
+            // Cache all saved recipes
+            for (const recipe of result.data) {
+                await offlineService.cacheRecipe(recipe);
+                await offlineService.addOfflineFavorite(recipe.id.toString());
+            }
+
+            return result.data;
+        } catch (error) {
+            console.warn('Failed to fetch saved recipes, using cached versions:', error);
+            const cachedRecipes = offlineService.getCachedRecipes();
+            return cachedRecipes
+                .filter(recipe => offlineService.isOfflineFavorite(recipe.id.toString()))
+                .map(recipe => ({
+                    ...recipe,
+                    savedAt: new Date(recipe.cachedAt).toISOString()
+                } as SavedRecipe));
         }
     }
 
@@ -381,13 +437,34 @@ class RecipeService {
             throw new Error('Rating recipes requires an internet connection');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/rate`, {
-            method: 'POST',
-            headers: this.getAuthHeaders(),
-            body: JSON.stringify({ rating }),
-        });
+        try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
 
-        await this.handleResponse<void>(response);
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            if (!userId) {
+                throw new Error('User ID not found - please log in again');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/rating`, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId, rating }),
+            });
+
+            await this.handleResponse<void>(response);
+        } catch (error) {
+            console.error('Failed to rate recipe:', error);
+            throw error;
+        }
     }
 
     async deleteRecipe(recipeId: string): Promise<void> {
@@ -424,11 +501,85 @@ class RecipeService {
 
     // Alias methods for backward compatibility
     async saveRecipe(recipeId: string): Promise<void> {
-        return this.favoriteRecipe(recipeId);
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Saving recipes requires an internet connection');
+        }
+
+        try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
+
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            if (!userId) {
+                throw new Error('User ID not found - please log in again');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/save`, {
+                method: 'POST',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+
+            if (response.status === 404) {
+                throw new Error('Recipe not found or you do not have permission to save this recipe');
+            }
+
+            await this.handleResponse<void>(response);
+        } catch (error) {
+            console.error('Failed to save recipe:', error);
+            throw error;
+        }
     }
 
     async unsaveRecipe(recipeId: string): Promise<void> {
-        return this.unfavoriteRecipe(recipeId);
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Unsaving recipes requires an internet connection');
+        }
+
+        try {
+            // Get user ID from localStorage user data
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                throw new Error('Authentication required - please log in');
+            }
+
+            const user = JSON.parse(userData);
+            const userId = user.userId;
+
+            if (!userId) {
+                throw new Error('User ID not found - please log in again');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/recipes/${recipeId}/save`, {
+                method: 'DELETE',
+                headers: {
+                    ...this.getAuthHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+
+            if (response.status === 404) {
+                throw new Error('Recipe not found or you do not have permission to unsave this recipe');
+            }
+
+            await this.handleResponse<void>(response);
+        } catch (error) {
+            console.error('Failed to unsave recipe:', error);
+            throw error;
+        }
     }
 
     async toggleFavorite(recipeId: string): Promise<boolean> {
@@ -547,6 +698,66 @@ class RecipeService {
             // If API fails, return mock data
             console.warn('Failed to generate variation, using fallback data:', error);
             throw error; // Let the component handle the fallback
+        }
+    }
+
+    async getCollections(userId: number): Promise<RecipeCollection[]> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Getting collections requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/users/${userId}/collections`, {
+                headers: this.getAuthHeaders(),
+            });
+
+            const result = await this.handleResponse<{ success: boolean; data: RecipeCollection[] }>(response);
+            return result.data;
+        } catch (error) {
+            console.warn('Failed to fetch collections:', error);
+            return [];
+        }
+    }
+
+    async getCollectionRecipes(collectionId: number): Promise<Recipe[]> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Getting collection recipes requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/collections/${collectionId}/recipes`, {
+                headers: this.getAuthHeaders(),
+            });
+
+            const result = await this.handleResponse<{ success: boolean; data: Recipe[] }>(response);
+            return result.data;
+        } catch (error) {
+            console.warn('Failed to fetch collection recipes:', error);
+            return [];
+        }
+    }
+
+    async removeRecipeFromCollection(collectionId: number, recipeId: number): Promise<void> {
+        const networkStatus = offlineService.getNetworkStatus();
+
+        if (!networkStatus.isOnline) {
+            throw new Error('Removing recipes from collections requires an internet connection');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/recipes/collections/${collectionId}/recipes/${recipeId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+            });
+
+            await this.handleResponse<void>(response);
+        } catch (error) {
+            console.error('Failed to remove recipe from collection:', error);
+            throw error;
         }
     }
 }
